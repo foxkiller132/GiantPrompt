@@ -78,7 +78,7 @@ export const MACHINES = {
   wardTower: {
     name: 'Ward Tower', glyph: '♜', category: 'defense',
     purpose: 'Active Defense',
-    inputs:  { manaStream: 2 },
+    inputs:  { manaStream: 1 },
     outputs: {},
     residue: 1,
     range: 3.5, damage: 4,
