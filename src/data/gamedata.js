@@ -170,10 +170,10 @@ export const TECH_LOCKED = new Set(
 
 // Threat escalation is strictly proportional to total Arcane Residue.
 export const THREAT_TIERS = [
-  { id: 'calm',  label: 'Calm',       max: 50,       enemies: ['—'],                  color: '#5fd3a8' },
-  { id: 'early', label: 'Goblins',    max: 250,      enemies: ['Goblin'],             color: '#c6d35f' },
-  { id: 'mid',   label: 'Wraiths',    max: 1000,     enemies: ['Orc', 'Wraith'],      color: '#d39a5f' },
-  { id: 'late',  label: 'Dragons',    max: Infinity, enemies: ['Dragon', 'Lich'],     color: '#d35f5f' },
+  { id: 'calm',  label: 'Calm',       max: 50,       enemies: ['—'],                          color: '#5fd3a8' },
+  { id: 'early', label: 'Goblins',    max: 250,      enemies: ['Goblin', 'Imp'],              color: '#c6d35f' },
+  { id: 'mid',   label: 'Wraiths',    max: 1000,     enemies: ['Orc', 'Wraith', 'Brute'],     color: '#d39a5f' },
+  { id: 'late',  label: 'Dragons',    max: Infinity, enemies: ['Dragon', 'Lich', 'Basilisk'], color: '#d35f5f' },
 ];
 
 export function threatTierFor(residue) {

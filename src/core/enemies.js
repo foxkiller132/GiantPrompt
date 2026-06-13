@@ -15,11 +15,18 @@ const MAX_ENEMIES = 40;
 const BOSS_EVERY = 90;      // ticks between boss assaults at the late tier
 
 // Per-tier combatants. `power` drives sabotage severity; `loot` is resource theft.
+// `speed` (tiles/tick) is optional; defaults to ENEMY_SPEED. Fast raiders pressure
+// the factory quickly; armored brutes soak defense fire.
 const ROSTER = {
   calm:  [],
-  early: [{ name: 'Goblin', hp: 3,  power: 1, loot: 2 }],
-  mid:   [{ name: 'Orc', hp: 8, power: 3, loot: 4 }, { name: 'Wraith', hp: 6, power: 4, loot: 3 }],
-  late:  [{ name: 'Dragon', hp: 24, power: 9, loot: 8 }, { name: 'Lich', hp: 20, power: 8, loot: 6 }],
+  early: [{ name: 'Goblin', hp: 3,  power: 1, loot: 2 },
+          { name: 'Imp', hp: 2, power: 1, loot: 5, speed: 0.16 }],
+  mid:   [{ name: 'Orc', hp: 8, power: 3, loot: 4 },
+          { name: 'Wraith', hp: 6, power: 4, loot: 3, speed: 0.12 },
+          { name: 'Brute', hp: 22, power: 5, loot: 4, speed: 0.05 }],
+  late:  [{ name: 'Dragon', hp: 24, power: 9, loot: 8 },
+          { name: 'Lich', hp: 20, power: 8, loot: 6 },
+          { name: 'Basilisk', hp: 44, power: 7, loot: 5, speed: 0.045 }],
 };
 
 export function tickEnemies(state, rng = Math.random) {
@@ -107,8 +114,9 @@ export function tickEnemies(state, rng = Math.random) {
         events.push({ type: 'machine-destroyed', machine: target.id });
       }
     } else {
-      e.x += (dx / dist) * ENEMY_SPEED;
-      e.y += (dy / dist) * ENEMY_SPEED;
+      const sp = e.speed || ENEMY_SPEED;
+      e.x += (dx / dist) * sp;
+      e.y += (dy / dist) * sp;
     }
   }
   return { events, tier };
