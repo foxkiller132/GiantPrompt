@@ -470,7 +470,8 @@ function wireNetworkPanel() {
     }
   });
 }
-wireNetworkPanel();
+// NOTE: invoked after `net` is constructed below — calling it here would hit the
+// temporal dead zone of the `const net` declaration and crash module load.
 
 document.querySelectorAll('#dock .aa-dock-btn[data-panel]').forEach(btn => {
   btn.addEventListener('click', () => panels[btn.dataset.panel].toggle());
@@ -713,8 +714,8 @@ document.getElementById('dock-menu').addEventListener('click', () => {
   openMainMenu();
 });
 
-// Boot into the main menu rather than straight into play.
-openMainMenu();
+// (Boot into the main menu happens at the end of the module, once every
+// declaration it touches — gameSpeed, tier, etc. — has been initialized.)
 
 // Purifier engage/disengage — a deliberate Glyph sink the player controls.
 const purifyBtn = document.getElementById('purify-toggle');
@@ -777,6 +778,7 @@ net.onIntent = (kind, args) => {
     state.purifying = !state.purifying;
   }
 };
+wireNetworkPanel(); // safe now that `net` is initialized
 
 // ---- Build / placement -----------------------------------------------------
 function commitPlace(type, gx, gy) {
@@ -1251,7 +1253,8 @@ function frame() {
   renderWorld();
   requestAnimationFrame(frame);
 }
-// The world stays paused behind the main menu (openMainMenu set speed 0);
-// New Game / Continue start the tick loop. Only the render loop runs now.
+// Boot into the main menu (sets speed 0). New Game / Continue start the tick
+// loop. The world stays paused behind the menu; only the render loop runs.
+openMainMenu();
 renderHud(threatTierFor(state.residue));
 frame();
