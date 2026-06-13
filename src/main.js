@@ -144,6 +144,21 @@ function renderWorld() {
     ctx.restore();
   }
 
+  // Portal link beam between the first two powered portals.
+  const portals = state.machines.filter(m => m.type === 'portalGenerator' && m.active !== false);
+  if (portals.length >= 2) {
+    const a = portals[0], b = portals[1];
+    ctx.save();
+    ctx.strokeStyle = 'rgba(159, 120, 255, 0.4)';
+    ctx.lineWidth = 3; ctx.setLineDash([6, 8]);
+    ctx.shadowBlur = 10; ctx.shadowColor = '#9f78ff';
+    ctx.beginPath();
+    ctx.moveTo(a.x * TILE + TILE / 2, a.y * TILE + TILE / 2);
+    ctx.lineTo(b.x * TILE + TILE / 2, b.y * TILE + TILE / 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   for (const m of state.machines) {
     const def = MACHINES[m.type];
     const px = m.x * TILE, py = m.y * TILE;

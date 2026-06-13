@@ -43,6 +43,23 @@ export function tickGolems(state) {
       g.y += (dy / dist) * GOLEM_SPEED;
     }
   }
+
+  // --- Portal teleport: a golem reaching a powered portal emerges at its link --
+  const portals = state.machines.filter(m => m.type === 'portalGenerator' && m.active !== false);
+  if (portals.length >= 2) {
+    for (const g of state.golems) {
+      if (g.portalCooldown > 0) { g.portalCooldown--; continue; }
+      for (let i = 0; i < portals.length; i++) {
+        const p = portals[i];
+        if (Math.hypot((p.x + 0.5) - g.x, (p.y + 0.5) - g.y) <= 0.45) {
+          const exit = portals[(i + 1) % portals.length];
+          g.x = exit.x + 0.5; g.y = exit.y + 0.5;
+          g.portalCooldown = 8; // ticks before it can re-enter a portal
+          break;
+        }
+      }
+    }
+  }
 }
 
 // Route = waypoints at the two nearest processing machines to the hub.
