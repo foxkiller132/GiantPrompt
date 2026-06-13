@@ -7,7 +7,7 @@
 // Keeping mutation centralized and deterministic is what makes that validation
 // (and desync/cheat detection) tractable later.
 
-import { MACHINES, threatTierFor } from '../data/gamedata.js';
+import { MACHINES, threatTierFor, TECH, TECH_LOCKED } from '../data/gamedata.js';
 import { tickGolems } from './golems.js';
 import { tickEnemies } from './enemies.js';
 
@@ -19,6 +19,7 @@ export function createState() {
       manaCrystal: 25, fire: 40, water: 40, earth: 40, air: 40,
       manaStream: 0, refined: 0, ingot: 0, component: 4, glyph: 0,
     },
+    researched: [], // unlocked tech ids
     purifier: 0,    // Zone Purification progress toward the victory condition
     status: 'playing', // 'playing' | 'won' | 'lost'
     machines: [],   // { id, type, x, y, active, health }
@@ -73,8 +74,32 @@ function adjacentConduits(state, m) {
   ).length;
 }
 
+// Is a machine type available to place yet (start-unlocked or researched)?
+export function isUnlocked(state, type) {
+  if (!TECH_LOCKED.has(type)) return true;
+  const tech = Object.entries(TECH).find(([, t]) => t.unlocks.includes(type));
+  return tech ? state.researched.includes(tech[0]) : true;
+}
+
+// Can a tech be researched now (prereqs met, affordable, not already done)?
+export function canResearch(state, techId) {
+  const t = TECH[techId];
+  if (!t || state.researched.includes(techId)) return false;
+  if (!t.requires.every(r => state.researched.includes(r))) return false;
+  return Object.entries(t.cost).every(([res, n]) => (state.resources[res] || 0) >= n);
+}
+
+// Spend the cost and unlock a tech. Returns true on success.
+export function research(state, techId) {
+  if (!canResearch(state, techId)) return false;
+  for (const [res, n] of Object.entries(TECH[techId].cost)) state.resources[res] -= n;
+  state.researched.push(techId);
+  return true;
+}
+
 export function place(state, type, x, y) {
   if (!MACHINES[type]) throw new Error(`Unknown machine type: ${type}`);
+  if (!isUnlocked(state, type)) throw new Error(`Machine not yet researched: ${type}`);
   const machine = { id: state.nextId++, type, x, y, active: true };
   state.machines.push(machine);
   return machine;

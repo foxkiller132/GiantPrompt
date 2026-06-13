@@ -77,6 +77,42 @@ export const MACHINES = {
   },
 };
 
+// Research tree. The Arcane Transmuter is the "research lab": spending the listed
+// resources unlocks high-tier machines. `requires` enforces progression order.
+// Aether Condenser and Elemental Refinery are available from the start.
+export const TECH = {
+  synthesis: {
+    name: 'Arcane Synthesis', requires: [],
+    cost: { refined: 12, ingot: 6 }, unlocks: ['arcaneTransmuter'],
+    desc: 'Advanced synthesis and blueprinting.',
+  },
+  glyphcraft: {
+    name: 'Glyphcraft', requires: ['synthesis'],
+    cost: { component: 8, ingot: 10 }, unlocks: ['glyphCarver'],
+    desc: 'Carve functional Glyphs for upgrades and keying.',
+  },
+  animation: {
+    name: 'Golem Animation', requires: ['glyphcraft'],
+    cost: { component: 10, glyph: 4 }, unlocks: ['golemsmithHub'],
+    desc: 'Forge and program Worker Golems.',
+  },
+  logistics: {
+    name: 'Arcane Logistics', requires: ['synthesis'],
+    cost: { glyph: 3, manaStream: 30 }, unlocks: ['automatedConduit'],
+    desc: 'Continuous bulk transport via conduits.',
+  },
+  portals: {
+    name: 'Portal Theory', requires: ['logistics', 'glyphcraft'],
+    cost: { glyph: 8, component: 12 }, unlocks: ['portalGenerator'],
+    desc: 'Instantaneous transfer between linked points.',
+  },
+};
+
+// Machines unlocked by research (everything else is available from the start).
+export const TECH_LOCKED = new Set(
+  Object.values(TECH).flatMap(t => t.unlocks)
+);
+
 // Threat escalation is strictly proportional to total Arcane Residue.
 export const THREAT_TIERS = [
   { id: 'calm',  label: 'Calm',       max: 50,       enemies: ['—'],                  color: '#5fd3a8' },

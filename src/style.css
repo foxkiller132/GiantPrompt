@@ -106,6 +106,16 @@ html, body {
 .aa-build:hover, .aa-build:focus { background: rgba(201,164,90,0.12); box-shadow: inset 0 0 0 1px var(--aa-brass-dim); outline: none; }
 .aa-note { font-size: 13px; opacity: 0.8; line-height: 1.5; }
 
+/* ---- Lock / research state ---- */
+.aa-build.is-locked { opacity: 0.4; cursor: not-allowed; }
+.aa-build.is-locked::after { content: ' 🔒'; }
+.aa-tech { cursor: default; border-radius: 5px; padding: 5px 6px; }
+.aa-tech.is-ready { cursor: pointer; background: rgba(95,211,168,0.12); box-shadow: inset 0 0 0 1px rgba(95,211,168,0.4); }
+.aa-tech.is-ready:hover { background: rgba(95,211,168,0.2); }
+.aa-tech.is-done { opacity: 0.55; }
+.aa-tech.is-done em { color: #5fd3a8; }
+.aa-tech.is-locked { opacity: 0.5; }
+
 /* ---- Network panel ---- */
 .aa-net-status { font-size: 13px; margin: 6px 0; }
 .aa-net-status em { color: var(--aa-brass); font-style: normal; }

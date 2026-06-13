@@ -2,7 +2,8 @@
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
 import { RESOURCES, MACHINES, threatTierFor } from './data/gamedata.js';
-import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore } from './core/state.js';
+import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch } from './core/state.js';
+import { TECH } from './data/gamedata.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses } from './ui/feedback.js';
@@ -16,11 +17,12 @@ const state = createState();
 const canvas = document.getElementById('world');
 const ctx = canvas.getContext('2d');
 
-// Seed a small starter factory so the simulation visibly does something.
+// Seed a small starter factory. Synthesis is pre-researched so the Transmuter is
+// buildable from the start; the rest of the tech tree is the player's to unlock.
+state.researched.push('synthesis');
 place(state, 'elementalRefinery', 4, 4);
 place(state, 'aetherCondenser', 6, 4);
 place(state, 'arcaneTransmuter', 5, 6);
-place(state, 'golemsmithHub', 7, 6);
 
 // Natural raw-element nodes feed the refinery; a mana node feeds the condenser.
 seedNodes(state, [
@@ -62,6 +64,9 @@ function renderHud(tier) {
   const golemCount = document.getElementById('golem-count');
   if (golemCount) golemCount.textContent = String(state.golems.length);
 
+  refreshBlueprintLocks();
+  refreshResearch();
+
   if (state.status !== 'playing' && !document.getElementById('aa-end')) {
     const won = state.status === 'won';
     const overlay = document.createElement('div');
@@ -94,8 +99,38 @@ const panels = {
     '<p class="aa-note">Worker Golems are forged by the Golemsmith Hub and ' +
     'patrol routes between the nearest processing machines.</p>' +
     '<div class="aa-row"><span>Active Golems</span><em id="golem-count">0</em></div>')),
+  research: new Panel('research', 'Research — Arcane Transmuter', buildResearchBody()),
   network: new Panel('network', 'Network — P2P', buildNetworkBody()),
 };
+
+function buildResearchBody() {
+  const el = document.createElement('div');
+  el.innerHTML = '<p class="aa-note">Spend resources at the Transmuter to unlock ' +
+    'higher-tier machines.</p><div id="tech-list"></div>';
+  return el;
+}
+
+// Render the tech list with affordability/lock state; called each tick.
+function refreshResearch() {
+  const list = document.getElementById('tech-list');
+  if (!list) return;
+  list.innerHTML = Object.entries(TECH).map(([id, t]) => {
+    const done = state.researched.includes(id);
+    const ok = !done && canResearch(state, id);
+    const cost = Object.entries(t.cost).map(([r, n]) => `${n} ${r}`).join(', ');
+    const cls = done ? 'is-done' : ok ? 'is-ready' : 'is-locked';
+    const label = done ? 'Researched ✓' : `Research (${cost})`;
+    return `<div class="aa-row aa-tech ${cls}" data-tech="${id}" role="button" tabindex="0">` +
+      `<span>${t.name}</span><em>${label}</em></div>`;
+  }).join('');
+  list.querySelectorAll('.aa-tech.is-ready').forEach(row => {
+    row.addEventListener('click', () => {
+      const id = row.dataset.tech;
+      if (net.role === 'guest' && net.connected) { net.sendIntent('research', { tech: id }); return; }
+      if (research(state, id)) { Sound.portal(); refreshResearch(); }
+    });
+  });
+}
 
 // Network panel: manual-signaling WebRTC. Host generates an offer; guest pastes
 // it and returns an answer; host pastes the answer to connect.
@@ -176,6 +211,8 @@ net.onIntent = (kind, args) => {
     pulse(m.x, m.y, '#c9a45a');
   } else if (kind === 'upgrade') {
     upgrade(state, args.id);
+  } else if (kind === 'research') {
+    research(state, args.tech);
   }
 };
 
@@ -204,10 +241,20 @@ canvas.addEventListener('click', (e) => {
 
 // Selecting a blueprint enters build mode (Shift+drop releases the tool).
 document.querySelectorAll('.aa-build').forEach(row => {
-  const pick = () => build.select(row.dataset.build);
+  const pick = () => {
+    if (!isUnlocked(state, row.dataset.build)) { Sound.slain(); return; } // locked
+    build.select(row.dataset.build);
+  };
   row.addEventListener('click', pick);
   row.addEventListener('keydown', (e) => { if (e.key === 'Enter') pick(); });
 });
+
+// Reflect lock state on blueprint rows each tick.
+function refreshBlueprintLocks() {
+  document.querySelectorAll('.aa-build').forEach(row => {
+    row.classList.toggle('is-locked', !isUnlocked(state, row.dataset.build));
+  });
+}
 
 // ---- World render ----------------------------------------------------------
 function renderWorld() {
