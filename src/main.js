@@ -442,16 +442,30 @@ function renderWorld() {
     ctx.restore();
   }
 
-  // Enemies — ember-red motes converging on the factory.
+  // Enemies — ember-red motes converging on the factory; bosses loom larger.
   for (const e of state.enemies) {
     const px = e.x * TILE, py = e.y * TILE;
+    const r = e.isBoss ? 16 : 5 + Math.min(6, e.power);
     ctx.save();
-    ctx.shadowBlur = 12; ctx.shadowColor = '#ff6b6b';
-    ctx.fillStyle = '#ffb3b3';
+    ctx.shadowBlur = e.isBoss ? 22 : 12; ctx.shadowColor = e.isBoss ? '#ff3b3b' : '#ff6b6b';
+    ctx.fillStyle = e.isBoss ? '#ff8a8a' : '#ffb3b3';
     ctx.beginPath();
-    ctx.arc(px, py, 5 + Math.min(6, e.power), 0, Math.PI * 2);
+    ctx.arc(px, py, r, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+    // Health bar for bosses (and wounded elites).
+    if (e.maxHp && (e.isBoss || e.hp < e.maxHp)) {
+      const w = e.isBoss ? 40 : 18, frac = Math.max(0, e.hp / e.maxHp);
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(px - w / 2, py - r - 8, w, 4);
+      ctx.fillStyle = e.isBoss ? '#ff5f5f' : '#ffb3b3';
+      ctx.fillRect(px - w / 2, py - r - 8, w * frac, 4);
+    }
+    if (e.isBoss) {
+      ctx.fillStyle = '#ffd0d0'; ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(e.name, px, py - r - 12);
+    }
   }
 
   // Peer presence cursor: show the *other* player's pointer.

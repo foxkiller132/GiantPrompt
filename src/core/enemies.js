@@ -11,6 +11,7 @@ import { threatTierFor, MACHINES } from '../data/gamedata.js';
 const ENEMY_SPEED = 0.08;
 const CONTACT = 0.4;        // tiles
 const MAX_ENEMIES = 40;
+const BOSS_EVERY = 90;      // ticks between boss assaults at the late tier
 
 // Per-tier combatants. `power` drives sabotage severity; `loot` is resource theft.
 const ROSTER = {
@@ -31,8 +32,18 @@ export function tickEnemies(state, rng = Math.random) {
     if (rng() < spawnChance) {
       const proto = roster[Math.floor(rng() * roster.length)];
       const edge = spawnEdge(state, rng);
-      state.enemies.push({ id: state.nextId++, ...proto, x: edge.x, y: edge.y });
+      state.enemies.push({ id: state.nextId++, ...proto, maxHp: proto.hp, x: edge.x, y: edge.y });
     }
+  }
+
+  // --- Boss waves: at the late tier, periodically unleash a single Elder boss --
+  if (tier.id === 'late' && state.tick % BOSS_EVERY === 0 &&
+      !state.enemies.some(e => e.isBoss)) {
+    const boss = rng() < 0.5
+      ? { name: 'Elder Lich', hp: 140, power: 14, loot: 12 }
+      : { name: 'Ancient Dragon', hp: 180, power: 18, loot: 14 };
+    const edge = spawnEdge(state, rng);
+    state.enemies.push({ id: state.nextId++, ...boss, maxHp: boss.hp, isBoss: true, x: edge.x, y: edge.y });
   }
 
   // --- Defense: golems within range strike the nearest enemy --------------
