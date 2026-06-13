@@ -43,6 +43,11 @@ html, body {
 }
 .aa-resource-bar { display: flex; gap: 14px; flex: 1; flex-wrap: wrap; }
 .aa-res { font-size: 15px; opacity: 0.92; }
+.aa-objective { font-size: 13px; color: #8fc0ff; opacity: 0.9; white-space: nowrap; }
+.aa-goal.is-done { opacity: 0.5; }
+.aa-goal.is-done span { color: #5fd3a8; }
+.aa-goal.is-current span { color: var(--aa-brass); }
+.aa-goal.is-future { opacity: 0.6; }
 .aa-threat { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .aa-threat-track {
   width: 160px; height: 8px; border-radius: 5px;

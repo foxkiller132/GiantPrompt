@@ -8,6 +8,7 @@ import { ACHIEVEMENTS } from './core/achievements.js';
 import { PERKS, perkLevel, spendPerk, canSpendPerk } from './core/perks.js';
 import { WONDERS, hasWonder, canBuildWonder, buildWonder } from './core/wonders.js';
 import { eventActive, EVENTS } from './core/events.js';
+import { OBJECTIVES, currentObjective } from './core/objectives.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses, isMuted, setMuted, getVolume, setVolume } from './ui/feedback.js';
@@ -105,9 +106,16 @@ function renderHud(tier) {
     if (ev) ei.textContent = `✦ ${ev.name} (${Math.max(0, state.event.until - state.tick)}t)`;
   }
 
+  const objHud = document.getElementById('objective-hud');
+  if (objHud) {
+    const o = currentObjective(state);
+    objHud.textContent = o ? `▶ ${o.name}` : '';
+  }
+
   const golemCount = document.getElementById('golem-count');
   if (golemCount) golemCount.textContent = String(state.golems.length);
 
+  refreshGoals();
   refreshBlueprintLocks();
   refreshResearch();
   refreshStats();
@@ -178,6 +186,7 @@ const panels = {
   research: new Panel('research', 'Research — Arcane Transmuter', buildResearchBody()),
   stats: new Panel('stats', 'Run Statistics', buildPanelBody('<div id="stats-list"></div>')),
   achievements: new Panel('achievements', 'Achievements', buildPanelBody('<div id="ach-list"></div>')),
+  goals: new Panel('goals', 'Objectives', buildPanelBody('<div id="goal-list"></div>')),
   codex: new Panel('codex', 'Codex', buildPanelBody(buildCodexHTML())),
   perks: new Panel('perks', 'Ascension Perks', buildPanelBody(
     '<p class="aa-note">Each Purification grants a perk point.</p>' +
@@ -250,6 +259,17 @@ function buildCodexHTML() {
          `<div class="aa-codex-h">Ascension Perks</div>${perks}` +
          `<div class="aa-codex-h">World Events</div>${events}` +
          `<div class="aa-codex-h">Threat Tiers</div>${threats}`;
+}
+
+function refreshGoals() {
+  const list = document.getElementById('goal-list');
+  if (!list) return;
+  const cur = state.objective || 0;
+  list.innerHTML = OBJECTIVES.map((o, i) => {
+    const cls = i < cur ? 'is-done' : i === cur ? 'is-current' : 'is-future';
+    const mark = i < cur ? '✓' : i === cur ? '▶' : '·';
+    return `<div class="aa-row aa-goal ${cls}"><span>${mark} ${o.name}</span></div>`;
+  }).join('') + (cur >= OBJECTIVES.length ? '<p class="aa-note">All objectives complete — the cycle is yours to deepen.</p>' : '');
 }
 
 function refreshAchievements() {
@@ -1024,6 +1044,8 @@ function simulationStep() {
       Sound.portal(); banner(`✦ ${ev.name}${ev.instant ? ' — windfall!' : ''}`);
     } else if (ev.type === 'researched') {
       Sound.win(); banner(`🔬 Research complete — ${TECH[ev.id]?.name || ev.id}`);
+    } else if (ev.type === 'objective') {
+      Sound.collect(); banner(`✓ Objective — ${ev.name}`);
     }
   }
   if (state.status !== lastStatus) {

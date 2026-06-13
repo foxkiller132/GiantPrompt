@@ -23,6 +23,7 @@ import { checkAchievements } from './achievements.js';
 import { outputMultiplier, residueMultiplier } from './perks.js';
 import { wonderOutputMult, wonderResidueMult, wonderPurifyRate } from './wonders.js';
 import { tickWorldEvent, eventOutputMult, eventResidueMult } from './events.js';
+import { tickObjectives } from './objectives.js';
 
 export function createState() {
   return {
@@ -41,6 +42,7 @@ export function createState() {
     purifications: 0, // completed purifications (escalating endgame, never terminal)
     stats: { enemiesSlain: 0, machinesBuilt: 0, peakResidue: 0 }, // run statistics
     achievements: [], // unlocked achievement ids
+    objective: 0,     // index of the current guided objective
     perkPoints: 0,    // unspent ascension perk points (1 per purification)
     perks: {},        // perk id -> level
     wonders: [],      // built wonder ids (permanent run effects)
@@ -284,6 +286,9 @@ export function applyTick(state) {
   for (const a of checkAchievements(state)) {
     events.push({ type: 'achievement', id: a.id, name: a.name });
   }
+
+  const doneObj = tickObjectives(state);
+  if (doneObj) events.push({ type: 'objective', name: doneObj.name });
 
   return { events, residueDelta, tier: threatTierFor(state.residue), status: state.status };
 }
