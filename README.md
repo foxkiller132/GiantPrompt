@@ -52,9 +52,20 @@ python3 -m http.server 8000
   the host runs the authoritative tick and broadcasts snapshots; guests render
   them and send validated intents. Manual SDP signaling (no server) via the
   Network panel.
+- **Save/load** with autosave (versioned localStorage snapshots).
+- **Research tech tree** gating advanced machines (Transmuter as research lab).
+- **Peer presence cursors** in P2P sessions.
+- **Machine inspector** tooltip (recipe, level, status, upgrade cost).
+- **Minimap** overview of machines, enemies, golems, and nodes.
+- **Ward Towers** — mana-powered defensive structures.
+- **Pause + 1×/2×/3× game speed** controls.
+- **Demolish mode** to remove machines.
+- **Combat Golems** that hunt enemies; **boss waves** at the late tier.
+- **Residue cleansing** via the Purifier; **sound mute** toggle.
 
 ## Roadmap (remaining)
 
-1. Hosted signaling option (QR/relay) to replace manual SDP copy/paste.
-2. Per-peer cursors/presence and >2 peer mesh.
-3. Deeper tech tree and save/load to disk.
+1. Hosted signaling option (QR/relay) to replace manual SDP copy/paste
+   (requires a relay/signaling server — out of scope for a serverless build).
+2. >2-peer mesh and Mining Golems.
+3. Balance tuning pass once play-tested.
