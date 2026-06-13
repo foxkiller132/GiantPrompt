@@ -38,6 +38,7 @@ export function createState() {
     researched: [], // unlocked tech ids
     researching: null, // active continuous research { id, spent }
     purifier: 0,    // progress toward the next Zone Purification milestone
+    purifying: false, // whether surplus Glyphs are routed into the Purifier
     runName: '',    // player-given label for this run (shown in the slot list)
     difficulty: 1,  // threat multiplier chosen at New Game (Calm/Standard/Relentless)
     purifications: 0, // completed purifications (escalating endgame, never terminal)
@@ -265,9 +266,10 @@ export function applyTick(state) {
     if (state.residue > state.stats.peakResidue) state.stats.peakResidue = Math.floor(state.residue);
   }
 
-  // Victory: channel surplus Glyphs into the Zone Purifier. Sustaining a fully
-  // automated, defended factory long enough purifies the zone and wins the run.
-  if (state.status === 'playing' && state.resources.glyph >= 1) {
+  // Zone Purifier: a deliberate, toggleable sink. When engaged, it routes surplus
+  // Glyphs into purification — a trade-off against research, upgrades, and modules,
+  // which all also want Glyphs. Off by default so it never silently starves them.
+  if (state.status === 'playing' && state.purifying && state.resources.glyph >= 1) {
     state.resources.glyph -= 1;
     state.purifier += wonderPurifyRate(state);
     // Purification actively scrubs pollution, easing the threat curve — but only

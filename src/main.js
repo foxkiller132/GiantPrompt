@@ -74,6 +74,11 @@ function renderHud(tier) {
 
   const purFill = document.getElementById('purifier-fill');
   if (purFill) purFill.style.width = `${(state.purifier / purifierGoal(state)) * 100}%`;
+  const purBtn = document.getElementById('purify-toggle');
+  if (purBtn) {
+    purBtn.textContent = `Purifier: ${state.purifying ? 'On' : 'Off'}`;
+    purBtn.classList.toggle('is-on', !!state.purifying);
+  }
 
   // Threat forecast: combine spawn pressure (residue × ascension) with the power
   // already on the field into a coarse, readable warning level.
@@ -602,6 +607,13 @@ document.getElementById('dock-menu').addEventListener('click', () => {
 // Boot into the main menu rather than straight into play.
 openMainMenu();
 
+// Purifier engage/disengage — a deliberate Glyph sink the player controls.
+const purifyBtn = document.getElementById('purify-toggle');
+purifyBtn.addEventListener('click', () => {
+  if (net.role === 'guest' && net.connected) { net.sendIntent('purify-toggle', {}); return; }
+  state.purifying = !state.purifying; Sound.activate();
+});
+
 // Sound mute toggle.
 const muteBtn = document.getElementById('dock-mute');
 function refreshMute() { muteBtn.textContent = isMuted() ? '🔇' : '🔊'; }
@@ -652,6 +664,8 @@ net.onIntent = (kind, args) => {
     cycleModule(state, args.id);
   } else if (kind === 'wonder') {
     buildWonder(state, args.id);
+  } else if (kind === 'purify-toggle') {
+    state.purifying = !state.purifying;
   }
 };
 
