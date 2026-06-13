@@ -49,7 +49,14 @@ export function tickEnemies(state, rng = Math.random) {
     if (rng() < spawnChance) {
       const proto = scale(roster[Math.floor(rng() * roster.length)]);
       const edge = spawnEdge(state, rng);
-      state.enemies.push({ id: state.nextId++, ...proto, maxHp: proto.hp, x: edge.x, y: edge.y });
+      const e = { id: state.nextId++, ...proto, maxHp: proto.hp, x: edge.x, y: edge.y };
+      // Elite modifier: chance rises with ascension. Shielded soaks damage;
+      // regenerating heals over time — both demand stronger focus-fire.
+      if (tier.id !== 'early' && rng() < Math.min(0.3, 0.08 * asc)) {
+        if (rng() < 0.5) { e.shielded = 0.5; e.name = 'Shielded ' + e.name; }
+        else { e.regen = Math.max(0.3, e.maxHp * 0.01); e.name = 'Vile ' + e.name; }
+      }
+      state.enemies.push(e);
     }
   }
 
@@ -75,7 +82,7 @@ export function tickEnemies(state, rng = Math.random) {
       const d = Math.hypot(e.x - g.x, e.y - g.y);
       if (d < bestD) { bestD = d; best = e; }
     }
-    if (best) best.hp -= dmg;
+    if (best) best.hp -= dmg * (best.shielded ? (1 - best.shielded) : 1);
   }
   // --- Active defense: any powered defensive structure (def.range/def.damage)
   // blasts the nearest enemy in range. Generalized so new towers/spires work. --
@@ -88,8 +95,15 @@ export function tickEnemies(state, rng = Math.random) {
       const d = Math.hypot(e.x - tx, e.y - ty);
       if (d < bestD) { bestD = d; best = e; }
     }
-    if (best) { best.hp -= def.damage * defMult; tower.firingAt = { x: best.x, y: best.y }; }
-    else tower.firingAt = null;
+    if (best) {
+      best.hp -= def.damage * defMult * (best.shielded ? (1 - best.shielded) : 1);
+      tower.firingAt = { x: best.x, y: best.y };
+    } else tower.firingAt = null;
+  }
+
+  // Regenerating elites heal a little each tick (never above their max).
+  for (const e of state.enemies) {
+    if (e.regen && e.hp > 0) e.hp = Math.min(e.maxHp, e.hp + e.regen);
   }
 
   const slain = state.enemies.filter(e => e.hp <= 0).length;

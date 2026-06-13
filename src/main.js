@@ -857,6 +857,12 @@ function renderWorld() {
     ctx.beginPath();
     ctx.arc(px, py, r, 0, Math.PI * 2);
     ctx.fill();
+    // Elite modifier ring: cyan = shielded, green = regenerating.
+    if (e.shielded || e.regen) {
+      ctx.strokeStyle = e.shielded ? '#7fd6ff' : '#7fffa8';
+      ctx.lineWidth = 2; ctx.shadowBlur = 6;
+      ctx.beginPath(); ctx.arc(px, py, r + 3, 0, Math.PI * 2); ctx.stroke();
+    }
     ctx.restore();
     // Health bar for bosses (and wounded elites).
     if (e.maxHp && (e.isBoss || e.hp < e.maxHp)) {
