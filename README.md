@@ -46,9 +46,15 @@ python3 -m http.server 8000
 - **Raw-element node extraction** for a self-sustaining economy.
 - **Audio + visual feedback** (WebAudio chimes + canvas pulse rings).
 - **Automated Conduit flow bonus** boosting adjacent machine throughput.
+- **Portal Generator paired teleport** for golems between linked portals.
+- **Machine upgrades**: spend Glyphs to level up output (per-level bonus).
+- **P2P multiplayer (WebRTC)** with the host as **Designated Authority Client**:
+  the host runs the authoritative tick and broadcasts snapshots; guests render
+  them and send validated intents. Manual SDP signaling (no server) via the
+  Network panel.
 
 ## Roadmap (remaining)
 
-1. WebRTC P2P mesh with the DAC host loop and snapshot reconciliation.
-2. Portal Generator paired teleport for golems/bulk goods.
-3. Machine upgrades and deeper tech progression.
+1. Hosted signaling option (QR/relay) to replace manual SDP copy/paste.
+2. Per-peer cursors/presence and >2 peer mesh.
+3. Deeper tech tree and save/load to disk.

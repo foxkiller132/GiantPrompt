@@ -1,11 +1,12 @@
 // Arcane Automata — bootstrap & game loop.
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
-import { RESOURCES, MACHINES } from './data/gamedata.js';
-import { createState, place, applyTick, seedNodes, upgrade, upgradeCost } from './core/state.js';
+import { RESOURCES, MACHINES, threatTierFor } from './data/gamedata.js';
+import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore } from './core/state.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses } from './ui/feedback.js';
+import { Net } from './net/p2p.js';
 
 const TICK_MS = 1000;
 const TILE = 64;
@@ -92,21 +93,85 @@ const panels = {
     '<p class="aa-note">Worker Golems are forged by the Golemsmith Hub and ' +
     'patrol routes between the nearest processing machines.</p>' +
     '<div class="aa-row"><span>Active Golems</span><em id="golem-count">0</em></div>')),
-  network: new Panel('network', 'Network — P2P', buildPanelBody(
-    '<p class="aa-note">Host acts as Designated Authority Client. ' +
-    'WebRTC peer mesh planned; the authoritative tick already runs host-side.</p>')),
+  network: new Panel('network', 'Network — P2P', buildNetworkBody()),
 };
 
-document.querySelectorAll('.aa-dock-btn').forEach(btn => {
+// Network panel: manual-signaling WebRTC. Host generates an offer; guest pastes
+// it and returns an answer; host pastes the answer to connect.
+function buildNetworkBody() {
+  const el = document.createElement('div');
+  el.innerHTML = `
+    <p class="aa-note">Host = Designated Authority Client. No server: copy/paste
+    the codes to connect a peer.</p>
+    <div class="aa-net-status">Status: <em id="net-status">solo</em></div>
+    <div class="aa-net-actions">
+      <button id="net-host" class="aa-dock-btn">Host</button>
+      <button id="net-join" class="aa-dock-btn">Join</button>
+    </div>
+    <label class="aa-net-field">Your code (share this)
+      <textarea id="net-local" rows="2" readonly placeholder="—"></textarea></label>
+    <label class="aa-net-field">Peer code (paste here)
+      <textarea id="net-remote" rows="2" placeholder="paste peer code"></textarea></label>
+    <button id="net-apply" class="aa-dock-btn">Apply Peer Code</button>`;
+  return el;
+}
+
+function wireNetworkPanel() {
+  const status = document.getElementById('net-status');
+  const local = document.getElementById('net-local');
+  const remote = document.getElementById('net-remote');
+  net.onStatus = (s) => { status.textContent = `${net.role || 'solo'} · ${s}`; };
+
+  document.getElementById('net-host').addEventListener('click', async () => {
+    status.textContent = 'host · gathering…';
+    local.value = await net.host();
+    status.textContent = 'host · share your code, then apply the peer answer';
+  });
+  document.getElementById('net-join').addEventListener('click', () => {
+    status.textContent = 'guest · paste the host code below, then Apply';
+    net.role = 'guest-pending';
+  });
+  document.getElementById('net-apply').addEventListener('click', async () => {
+    const code = remote.value.trim();
+    if (!code) return;
+    if (net.role === 'host') {
+      await net.acceptAnswer(code);
+      status.textContent = 'host · connecting…';
+    } else {
+      local.value = await net.join(code);
+      status.textContent = 'guest · send this answer back to the host';
+    }
+  });
+}
+wireNetworkPanel();
+
+document.querySelectorAll('#dock .aa-dock-btn').forEach(btn => {
   btn.addEventListener('click', () => panels[btn.dataset.panel].toggle());
 });
 
+// ---- Networking (P2P / DAC) ------------------------------------------------
+const net = new Net();
+// GUEST: replace local state with the host's authoritative snapshot.
+net.onSnapshot = (snap) => { restore(state, snap); };
+// HOST: validate and apply guest intents (the DAC is the sole committer).
+net.onIntent = (kind, args) => {
+  if (kind === 'place' && !state.machines.some(m => m.x === args.x && m.y === args.y)) {
+    const m = place(state, args.type, args.x, args.y);
+    pulse(m.x, m.y, '#c9a45a');
+  } else if (kind === 'upgrade') {
+    upgrade(state, args.id);
+  }
+};
+
 // ---- Build / placement -----------------------------------------------------
-const build = new BuildController(state, canvas, TILE, (m) => {
+function commitPlace(type, gx, gy) {
+  if (net.role === 'guest' && net.connected) { net.sendIntent('place', { type, x: gx, y: gy }); return; }
+  const m = place(state, type, gx, gy);
   Sound.place();
   pulse(m.x, m.y, '#c9a45a');
   renderHud(tier);
-});
+}
+const build = new BuildController(state, canvas, TILE, commitPlace);
 
 // Click a placed machine (when not building) to upgrade it with Glyphs.
 canvas.addEventListener('click', (e) => {
@@ -116,6 +181,7 @@ canvas.addEventListener('click', (e) => {
   const gy = Math.floor((e.clientY - r.top) / TILE);
   const m = state.machines.find(x => x.x === gx && x.y === gy);
   if (!m) return;
+  if (net.role === 'guest' && net.connected) { net.sendIntent('upgrade', { id: m.id }); return; }
   if (upgrade(state, m.id)) { Sound.activate(); pulse(m.x, m.y, '#c9a45a'); renderHud(tier); }
   else { Sound.slain(); } // not enough Glyphs — soft denial cue
 });
@@ -251,8 +317,13 @@ function roundRect(c, x, y, w, h, r) {
 let tier;
 let lastStatus = 'playing';
 function simulationStep() {
+  // Guests do not run the simulation — the host (DAC) is authoritative and we
+  // simply render the snapshots it broadcasts.
+  if (net.role === 'guest' && net.connected) { tier = threatTierFor(state.residue); renderHud(tier); return; }
+
   const result = applyTick(state);
   tier = result.tier;
+  if (net.role === 'host') net.broadcast(snapshot(state));
 
   // Attach feedback to real state changes reported by the authoritative tick.
   for (const ev of result.events) {

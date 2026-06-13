@@ -102,6 +102,17 @@ html, body {
 .aa-build:hover, .aa-build:focus { background: rgba(201,164,90,0.12); box-shadow: inset 0 0 0 1px var(--aa-brass-dim); outline: none; }
 .aa-note { font-size: 13px; opacity: 0.8; line-height: 1.5; }
 
+/* ---- Network panel ---- */
+.aa-net-status { font-size: 13px; margin: 6px 0; }
+.aa-net-status em { color: var(--aa-brass); font-style: normal; }
+.aa-net-actions { display: flex; gap: 8px; margin-bottom: 8px; }
+.aa-net-field { display: block; font-size: 12px; opacity: 0.85; margin: 6px 0; }
+.aa-net-field textarea {
+  width: 100%; margin-top: 4px; resize: vertical; font-family: monospace;
+  font-size: 11px; color: var(--aa-ink); background: rgba(0,0,0,0.3);
+  border: 1px solid var(--aa-brass-dim); border-radius: 5px; padding: 5px;
+}
+
 /* ---- End-of-run overlay ---- */
 #aa-end {
   position: fixed; z-index: 50; top: 50%; left: 50%;

@@ -6,14 +6,16 @@
 // committer of state. Right-click / Escape cancels build mode.
 
 import { MACHINES } from '../data/gamedata.js';
-import { place } from '../core/state.js';
 
 export class BuildController {
-  constructor(state, canvas, tile, onPlace) {
+  // `commit(type, gx, gy)` performs the actual placement. In solo/host play it
+  // calls the authoritative place(); as a guest it sends a network intent. This
+  // keeps the controller agnostic to who owns the state.
+  constructor(state, canvas, tile, commit) {
     this.state = state;
     this.canvas = canvas;
     this.tile = tile;
-    this.onPlace = onPlace || (() => {});
+    this.commit = commit || (() => {});
     this.selected = null;          // machine type key, or null
     this.ghost = { x: -1, y: -1, valid: false };
 
@@ -58,8 +60,7 @@ export class BuildController {
     if (!this.selected) return;
     const { gx, gy } = this._tileFromEvent(e);
     if (this.occupied(gx, gy) || gy < 1) return; // keep top row clear of the HUD
-    const m = place(this.state, this.selected, gx, gy);
-    this.onPlace(m);
+    this.commit(this.selected, gx, gy);
     // Hold the tool for rapid placement; Shift releases after one drop.
     if (e.shiftKey) this.cancel();
   }
