@@ -6,7 +6,7 @@
 // (late). All resolution is deterministic and centralized so the host/DAC remains
 // the sole authority over combat outcomes.
 
-import { threatTierFor } from '../data/gamedata.js';
+import { threatTierFor, MACHINES } from '../data/gamedata.js';
 
 const ENEMY_SPEED = 0.08;
 const CONTACT = 0.4;        // tiles
@@ -46,6 +46,19 @@ export function tickEnemies(state, rng = Math.random) {
     }
     if (best) best.hp -= GOLEM_DMG;
   }
+  // --- Active defense: powered Ward Towers blast the nearest enemy in range --
+  for (const tower of state.machines.filter(m => m.type === 'wardTower' && m.active !== false)) {
+    const def = MACHINES.wardTower;
+    const tx = tower.x + 0.5, ty = tower.y + 0.5;
+    let best = null, bestD = def.range;
+    for (const e of state.enemies) {
+      const d = Math.hypot(e.x - tx, e.y - ty);
+      if (d < bestD) { bestD = d; best = e; }
+    }
+    if (best) { best.hp -= def.damage; tower.firingAt = { x: best.x, y: best.y }; }
+    else tower.firingAt = null;
+  }
+
   const slain = state.enemies.filter(e => e.hp <= 0).length;
   if (slain) events.push({ type: 'enemy-slain', count: slain });
   state.enemies = state.enemies.filter(e => e.hp > 0);

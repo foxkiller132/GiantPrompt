@@ -75,6 +75,15 @@ export const MACHINES = {
     residue: 4,
     notes: 'Manage throughput limits; failure to stabilize = temporary shutdown.',
   },
+  wardTower: {
+    name: 'Ward Tower', glyph: '♜', category: 'defense',
+    purpose: 'Active Defense',
+    inputs:  { manaStream: 2 },
+    outputs: {},
+    residue: 1,
+    range: 3.5, damage: 4,
+    notes: 'Mana-powered defensive system; blasts the nearest enemy in range each tick.',
+  },
 };
 
 // Research tree. The Arcane Transmuter is the "research lab": spending the listed
@@ -105,6 +114,11 @@ export const TECH = {
     name: 'Portal Theory', requires: ['logistics', 'glyphcraft'],
     cost: { glyph: 8, component: 12 }, unlocks: ['portalGenerator'],
     desc: 'Instantaneous transfer between linked points.',
+  },
+  wards: {
+    name: 'Ward Matrices', requires: ['synthesis'],
+    cost: { ingot: 8, manaStream: 25 }, unlocks: ['wardTower'],
+    desc: 'Mana-powered defensive towers.',
   },
 };
 
