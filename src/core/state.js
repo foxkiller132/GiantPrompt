@@ -150,9 +150,13 @@ export function applyTick(state) {
   // Victory: channel surplus Glyphs into the Zone Purifier. Sustaining a fully
   // automated, defended factory long enough purifies the zone and wins the run.
   const PURIFIER_GOAL = 100;
+  const CLEANSE_PER_GLYPH = 8; // residue scrubbed per Glyph channeled
   if (state.status === 'playing' && state.resources.glyph >= 1) {
     state.resources.glyph -= 1;
     state.purifier = Math.min(PURIFIER_GOAL, state.purifier + 1);
+    // Purification actively scrubs pollution, easing the threat curve — but only
+    // while you can spare the Glyphs the rest of the factory also wants.
+    state.residue = Math.max(0, state.residue - CLEANSE_PER_GLYPH);
     if (state.purifier >= PURIFIER_GOAL) state.status = 'won';
   }
   // Defeat: the factory is wiped out.
