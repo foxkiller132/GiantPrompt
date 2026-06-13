@@ -7,6 +7,7 @@ import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses } from './ui/feedback.js';
 import { Net } from './net/p2p.js';
+import { saveGame, loadGame, hasSave } from './core/save.js';
 
 const TICK_MS = 1000;
 const TILE = 64;
@@ -145,9 +146,24 @@ function wireNetworkPanel() {
 }
 wireNetworkPanel();
 
-document.querySelectorAll('#dock .aa-dock-btn').forEach(btn => {
+document.querySelectorAll('#dock .aa-dock-btn[data-panel]').forEach(btn => {
   btn.addEventListener('click', () => panels[btn.dataset.panel].toggle());
 });
+
+// ---- Save / load -----------------------------------------------------------
+document.getElementById('dock-save').addEventListener('click', () => {
+  if (saveGame(state)) { Sound.collect(); flashDock('dock-save', 'Saved ✓'); }
+});
+document.getElementById('dock-load').addEventListener('click', () => {
+  if (net.connected) return; // don't yank state out from under a live session
+  if (loadGame(state)) { Sound.portal(); flashDock('dock-load', 'Loaded ✓'); }
+});
+function flashDock(id, label) {
+  const btn = document.getElementById(id);
+  const prev = btn.textContent;
+  btn.textContent = label;
+  setTimeout(() => { btn.textContent = prev; }, 1100);
+}
 
 // ---- Networking (P2P / DAC) ------------------------------------------------
 const net = new Net();
@@ -324,6 +340,7 @@ function simulationStep() {
   const result = applyTick(state);
   tier = result.tier;
   if (net.role === 'host') net.broadcast(snapshot(state));
+  if (state.tick % 20 === 0) saveGame(state); // autosave (host/solo only)
 
   // Attach feedback to real state changes reported by the authoritative tick.
   for (const ev of result.events) {

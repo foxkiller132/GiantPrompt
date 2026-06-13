@@ -67,6 +67,10 @@ html, body {
   box-shadow: 0 0 14px rgba(201,164,90,0.4);
   transform: translateY(-1px);
 }
+.aa-dock-sep {
+  width: 1px; align-self: stretch; margin: 2px 4px;
+  background: var(--aa-brass-dim); opacity: 0.5;
+}
 
 /* ---- Panels ---- */
 .aa-panel {
