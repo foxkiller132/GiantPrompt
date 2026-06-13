@@ -211,7 +211,7 @@ html, body {
 #menu-veil[hidden] { display: none; }
 #menu {
   width: 440px; max-width: 92vw; padding: 30px 36px;
-  text-align: center; animation: aa-reveal 700ms ease both;
+  text-align: center; animation: aa-reveal-center 700ms ease both;
 }
 #menu h1 { margin: 0 0 6px; color: var(--aa-brass); font-size: 32px;
   text-shadow: 0 0 22px rgba(201,164,90,0.55); }
@@ -278,7 +278,7 @@ html, body {
   position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
   z-index: 45; padding: 10px 22px; color: var(--aa-brass); font-size: 16px;
   text-shadow: 0 0 14px rgba(201,164,90,0.5);
-  transition: opacity 700ms ease; animation: aa-reveal 500ms ease both;
+  transition: opacity 700ms ease; animation: aa-banner-in 500ms ease both;
 }
 .aa-banner.is-fading { opacity: 0; }
 .aa-end-actions { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
@@ -296,4 +296,15 @@ html, body {
 @keyframes aa-reveal {
   from { opacity: 0; transform: translate(-50%, -46%) scale(0.94); }
   to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+/* For flex-centered elements (e.g. the main menu): scale/fade only, no translate
+   — translate(-50%,-50%) would fight the flexbox centering and shove it offset. */
+@keyframes aa-reveal-center {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+/* For the top banner, which centers via translateX(-50%). */
+@keyframes aa-banner-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }

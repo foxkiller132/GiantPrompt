@@ -27,7 +27,7 @@ const TILE = 64;
 // top-left in world pixels. All world drawing happens under a ctx translate by
 // -cam, so geometry uses raw world coords; only input mapping, grid, and the
 // minimap are camera-aware.
-const WORLD = { w: 38, h: 24 };
+const WORLD = { w: 96, h: 60 };
 const cam = { x: 0, y: 0 };
 
 function clampCam() {
@@ -65,24 +65,47 @@ const ctx = canvas.getContext('2d');
 function newWorld() {
   restore(state, snapshot(createState()));
   state.researched.push('synthesis');
-  place(state, 'elementalRefinery', 16, 10);
-  place(state, 'aetherCondenser', 18, 10);
-  place(state, 'arcaneTransmuter', 17, 12);
-  // A home resource field tight around the start (claimed by the starter factory),
-  // plus richer expansion patches farther out that lie dormant until you build out
-  // to claim them — the classic factory-expansion loop.
-  seedNodes(state, [
-    // Home field (within claim range of the starting machines)
-    { element: 'fire',  x: 14, y: 9,  rate: 3 }, { element: 'water', x: 20, y: 9,  rate: 3 },
-    { element: 'earth', x: 14, y: 13, rate: 3 }, { element: 'air',   x: 20, y: 13, rate: 3 },
-    { element: 'manaCrystal', x: 17, y: 8, rate: 2 }, { element: 'manaCrystal', x: 17, y: 14, rate: 2 },
-    // Expansion patches (dormant until claimed; richer rate AND deeper reserves)
-    { element: 'fire',  x: 4,  y: 3,  rate: 4, reserve: 30000 }, { element: 'water', x: 33, y: 4,  rate: 4, reserve: 30000 },
-    { element: 'earth', x: 5,  y: 20, rate: 4, reserve: 30000 }, { element: 'air',   x: 32, y: 20, rate: 4, reserve: 30000 },
-    { element: 'manaCrystal', x: 34, y: 12, rate: 3, reserve: 30000 },
-  ]);
-  centerCamOn(17, 11);
+  const cx = Math.floor(WORLD.w / 2), cy = Math.floor(WORLD.h / 2);
+  place(state, 'elementalRefinery', cx, cy);
+  place(state, 'aetherCondenser', cx + 1, cy);
+  place(state, 'arcaneTransmuter', cx, cy + 1);
+  seedNodes(state, generateNodeField(cx, cy));
+  centerCamOn(cx, cy);
   lastStatus = 'playing';
+}
+
+// Procedurally lay out the resource field: a deterministic home field tight around
+// the start (claimable by the starter factory) plus many randomly scattered
+// expansion patches. No two nodes share a tile, and patches keep a minimum spacing
+// and stay clear of the start so they're dormant until you build out to them.
+function generateNodeField(cx, cy) {
+  const specs = [];
+  const placed = [];
+  const occupied = new Set([`${cx},${cy}`, `${cx + 1},${cy}`, `${cx},${cy + 1}`]);
+  const add = (element, x, y, rate, reserve) => {
+    specs.push({ element, x, y, rate, reserve }); placed.push({ x, y });
+  };
+  // Home field — hand-placed so it's guaranteed claimable and non-overlapping.
+  add('fire', cx - 3, cy - 2, 3, 15000); add('water', cx + 3, cy - 2, 3, 15000);
+  add('earth', cx - 3, cy + 2, 3, 15000); add('air', cx + 3, cy + 2, 3, 15000);
+  add('manaCrystal', cx - 1, cy - 3, 2, 15000); add('manaCrystal', cx + 1, cy + 3, 2, 15000);
+
+  // Expansion patches — random, with minimum spacing and well clear of the start.
+  const elems = ['fire', 'water', 'earth', 'air'];
+  const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const MIN_SPACING = 6, CLEAR_OF_START = 14, PATCHES = 40;
+  const ok = (x, y) => !occupied.has(`${x},${y}`)
+    && Math.hypot(x - cx, y - cy) >= CLEAR_OF_START
+    && placed.every(p => Math.hypot(p.x - x, p.y - y) >= MIN_SPACING);
+  let tries = 0;
+  while (placed.length < 6 + PATCHES && tries < 8000) {
+    tries++;
+    const x = rint(2, WORLD.w - 3), y = rint(2, WORLD.h - 3);
+    if (!ok(x, y)) continue;
+    const element = Math.random() < 0.22 ? 'manaCrystal' : elems[rint(0, 3)];
+    add(element, x, y, rint(3, 5), rint(22000, 40000));
+  }
+  return specs;
 }
 
 function resize() {
@@ -849,14 +872,14 @@ function setDemolish(on) {
 function overMinimap(e) {
   const r = canvas.getBoundingClientRect();
   const x = e.clientX - r.left, y = e.clientY - r.top;
-  return x >= minimap.x && x <= minimap.x + minimap.size &&
-         y >= minimap.y && y <= minimap.y + minimap.size;
+  return x >= minimap.x && x <= minimap.x + minimap.w &&
+         y >= minimap.y && y <= minimap.y + minimap.h;
 }
 canvas.addEventListener('click', (e) => {
   if (!overMinimap(e)) return;
   const r = canvas.getBoundingClientRect();
-  const tx = ((e.clientX - r.left) - minimap.x) / minimap.size * WORLD.w;
-  const ty = ((e.clientY - r.top) - minimap.y) / minimap.size * WORLD.h;
+  const tx = ((e.clientX - r.left) - minimap.x) / minimap.s;
+  const ty = ((e.clientY - r.top) - minimap.y) / minimap.s;
   centerCamOn(tx, ty);
   e.stopImmediatePropagation();
 }, true);
@@ -1138,43 +1161,42 @@ function renderWorld() {
   drawMinimap();
 }
 
-// Minimap: a compact overview of the whole world with the current viewport box.
-// Stored rect lets clicks on it recenter the camera.
-const minimap = { x: 0, y: 0, size: 160 };
+// Minimap: a compact, aspect-correct overview of the whole world with the current
+// viewport box. Stored rect + scale let clicks on it recenter the camera.
+const minimap = { x: 0, y: 0, w: 0, h: 0, s: 1 };
 function drawMinimap() {
-  const size = minimap.size, pad = 14;
-  const ox = canvas.width - size - pad, oy = canvas.height - size - pad - 44;
-  minimap.x = ox; minimap.y = oy;
-  const sx = size / WORLD.w, sy = size / WORLD.h;
+  const pad = 14, mw = 200, s = mw / WORLD.w, mh = WORLD.h * s; // single scale, no distortion
+  const ox = canvas.width - mw - pad, oy = canvas.height - mh - pad - 44;
+  minimap.x = ox; minimap.y = oy; minimap.w = mw; minimap.h = mh; minimap.s = s;
   ctx.save();
   ctx.fillStyle = 'rgba(10,12,18,0.82)';
   ctx.strokeStyle = 'rgba(201,164,90,0.5)';
   ctx.lineWidth = 1;
-  roundRect(ctx, ox, oy, size, size, 8);
+  roundRect(ctx, ox, oy, mw, mh, 8);
   ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.rect(ox, oy, size, size); ctx.clip();
+  ctx.beginPath(); ctx.rect(ox, oy, mw, mh); ctx.clip();
 
   for (const n of state.nodes) {
     ctx.fillStyle = n.reserve > 0 ? 'rgba(159,200,255,0.7)' : 'rgba(120,120,120,0.4)';
-    ctx.fillRect(ox + n.x * sx, oy + n.y * sy, 3, 3);
+    ctx.fillRect(ox + n.x * s, oy + n.y * s, 3, 3);
   }
   for (const m of state.machines) {
     ctx.fillStyle = m.active === false ? '#6a6f7e' : '#8fc0ff';
-    ctx.fillRect(ox + m.x * sx, oy + m.y * sy, 4, 4);
+    ctx.fillRect(ox + m.x * s, oy + m.y * s, 3, 3);
   }
   for (const g of state.golems) {
     ctx.fillStyle = '#9fffd0';
-    ctx.fillRect(ox + g.x * sx, oy + g.y * sy, 2, 2);
+    ctx.fillRect(ox + g.x * s, oy + g.y * s, 2, 2);
   }
   for (const e of state.enemies) {
     ctx.fillStyle = '#ff7b7b';
-    ctx.fillRect(ox + e.x * sx, oy + e.y * sy, 3, 3);
+    ctx.fillRect(ox + e.x * s, oy + e.y * s, 2, 2);
   }
   // Current viewport rectangle.
   ctx.strokeStyle = 'rgba(255,255,255,0.7)';
   ctx.lineWidth = 1;
-  ctx.strokeRect(ox + (cam.x / TILE) * sx, oy + (cam.y / TILE) * sy,
-                 (canvas.width / TILE) * sx, (canvas.height / TILE) * sy);
+  ctx.strokeRect(ox + (cam.x / TILE) * s, oy + (cam.y / TILE) * s,
+                 (canvas.width / TILE) * s, (canvas.height / TILE) * s);
   ctx.restore();
 }
 
