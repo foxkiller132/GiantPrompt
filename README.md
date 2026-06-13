@@ -60,6 +60,11 @@ long time and the world grows with it.
 tracked by run **stats**, **achievements**, and a cross-run **lifetime profile**.
 **World events** (mana surges, arcane storms) keep long stretches dynamic.
 
+The factory sprawls across a **world larger than the screen**: pan with WASD /
+arrow keys, middle-mouse drag, or click the **minimap** to jump. A home resource
+field surrounds the start, with richer **expansion patches** farther out that
+reward scaling production toward them.
+
 ## Sessions & multiplayer
 
 - **Save-based:** named save slots with metadata, autosave, export/import codes.
