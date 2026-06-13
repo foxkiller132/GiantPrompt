@@ -120,6 +120,7 @@ function renderHud(tier) {
   const golemCount = document.getElementById('golem-count');
   if (golemCount) golemCount.textContent = String(state.golems.length);
 
+  refreshInventory();
   refreshGoals();
   refreshBlueprintLocks();
   refreshResearch();
@@ -177,9 +178,7 @@ function buildPanelBody(html) {
 }
 
 const panels = {
-  inventory: new Panel('inventory', 'Resource Inventory', buildPanelBody(
-    Object.values(RESOURCES).map(r =>
-      `<div class="aa-row"><span>${r.icon} ${r.name}</span><em>${r.kind}</em></div>`).join(''))),
+  inventory: new Panel('inventory', 'Resource Inventory', buildPanelBody('<div id="inv-list"></div>')),
   blueprints: new Panel('blueprints', 'Blueprint Library', buildPanelBody(
     Object.entries(MACHINES).map(([key, m]) =>
       `<div class="aa-row aa-build" data-build="${key}" role="button" tabindex="0">` +
@@ -264,6 +263,27 @@ function buildCodexHTML() {
          `<div class="aa-codex-h">Ascension Perks</div>${perks}` +
          `<div class="aa-codex-h">World Events</div>${events}` +
          `<div class="aa-codex-h">Threat Tiers</div>${threats}`;
+}
+
+// Smoothed per-resource net production rate (units/tick) for the Inventory panel.
+const resRates = {};
+function trackRates(before, after) {
+  for (const k of Object.keys(after)) {
+    const delta = (after[k] || 0) - (before[k] || 0);
+    resRates[k] = (resRates[k] || 0) * 0.85 + delta * 0.15;
+  }
+}
+function refreshInventory() {
+  const list = document.getElementById('inv-list');
+  if (!list) return;
+  list.innerHTML = Object.entries(RESOURCES).map(([key, r]) => {
+    const amt = Math.floor(state.resources[key] || 0);
+    const rate = resRates[key] || 0;
+    const rateStr = Math.abs(rate) < 0.05 ? '' :
+      `<em class="${rate >= 0 ? 'aa-rate-pos' : 'aa-rate-neg'}">${rate >= 0 ? '+' : ''}${rate.toFixed(1)}/t</em>`;
+    return `<div class="aa-row" title="${r.desc}"><span>${r.icon} ${r.name}</span>` +
+      `<span class="aa-inv-amt">${amt} ${rateStr}</span></div>`;
+  }).join('');
 }
 
 function refreshGoals() {
@@ -1048,8 +1068,10 @@ function simulationStep() {
   // simply render the snapshots it broadcasts.
   if (net.role === 'guest' && net.connected) { tier = threatTierFor(state.residue); renderHud(tier); return; }
 
+  const before = { ...state.resources };
   const result = applyTick(state);
   tier = result.tier;
+  trackRates(before, state.resources);
   if (net.role === 'host') net.broadcast(snapshot(state));
   if (autosaveEvery > 0 && state.tick % autosaveEvery === 0) saveGame(state);
 
