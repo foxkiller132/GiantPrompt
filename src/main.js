@@ -86,6 +86,15 @@ function renderHud(tier) {
     fc.style.color = level[1];
   }
 
+  // Starvation warning: surface machines idled by missing inputs (e.g. mana),
+  // which is otherwise only visible by inspecting each machine.
+  const sw = document.getElementById('starve-warn');
+  if (sw) {
+    const starved = state.machines.filter(m => m.active === false).length;
+    sw.hidden = starved === 0;
+    sw.textContent = `⚠ ${starved} starved`;
+  }
+
   const golemCount = document.getElementById('golem-count');
   if (golemCount) golemCount.textContent = String(state.golems.length);
 

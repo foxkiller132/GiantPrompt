@@ -51,6 +51,13 @@ html, body {
 .aa-threat-fill { height: 100%; width: 0; transition: width 600ms ease, background 600ms ease; }
 .aa-threat-tier { min-width: 90px; font-variant-numeric: tabular-nums; }
 .aa-forecast { font-size: 13px; font-weight: bold; min-width: 96px; transition: color 500ms ease; }
+.aa-starve {
+  font-size: 13px; font-weight: bold; color: #d39a5f;
+  padding: 3px 10px; border: 1px solid #7a6534; border-radius: 6px;
+  background: rgba(120,90,40,0.18); animation: aa-starve-pulse 1.6s ease-in-out infinite;
+}
+.aa-starve[hidden] { display: none; }
+@keyframes aa-starve-pulse { 0%,100% { opacity: 0.65; } 50% { opacity: 1; } }
 
 /* ---- Dock ---- */
 #dock {
