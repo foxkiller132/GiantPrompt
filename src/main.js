@@ -2,7 +2,7 @@
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
 import { RESOURCES, MACHINES } from './data/gamedata.js';
-import { createState, place, applyTick, seedNodes } from './core/state.js';
+import { createState, place, applyTick, seedNodes, upgrade, upgradeCost } from './core/state.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses } from './ui/feedback.js';
@@ -108,6 +108,18 @@ const build = new BuildController(state, canvas, TILE, (m) => {
   renderHud(tier);
 });
 
+// Click a placed machine (when not building) to upgrade it with Glyphs.
+canvas.addEventListener('click', (e) => {
+  if (build.isActive()) return;
+  const r = canvas.getBoundingClientRect();
+  const gx = Math.floor((e.clientX - r.left) / TILE);
+  const gy = Math.floor((e.clientY - r.top) / TILE);
+  const m = state.machines.find(x => x.x === gx && x.y === gy);
+  if (!m) return;
+  if (upgrade(state, m.id)) { Sound.activate(); pulse(m.x, m.y, '#c9a45a'); renderHud(tier); }
+  else { Sound.slain(); } // not enough Glyphs — soft denial cue
+});
+
 // Selecting a blueprint enters build mode (Shift+drop releases the tool).
 document.querySelectorAll('.aa-build').forEach(row => {
   const pick = () => build.select(row.dataset.build);
@@ -188,6 +200,13 @@ function renderWorld() {
     ctx.font = '26px serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(def.glyph, px + (TILE - 6) / 2, py + (TILE - 6) / 2);
+
+    if ((m.level || 1) > 1) {
+      ctx.fillStyle = '#c9a45a';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      ctx.fillText(`L${m.level}`, px + TILE - 10, py + 4);
+    }
   }
 
   // Golems — small glowing motes patrolling their routes.

@@ -47,6 +47,24 @@ function tickNodes(state) {
   }
 }
 
+// Upgrade a machine one level. Cost scales with level and is paid in Glyphs (the
+// spec's machine-upgrade currency). Returns true if the upgrade was applied.
+export function upgradeCost(level) { return level * 3; }
+
+export function upgrade(state, machineId) {
+  const m = state.machines.find(x => x.id === machineId);
+  if (!m) return false;
+  m.level = m.level || 1;
+  const cost = upgradeCost(m.level);
+  if ((state.resources.glyph || 0) < cost) return false;
+  state.resources.glyph -= cost;
+  m.level += 1;
+  return true;
+}
+
+// Output multiplier from a machine's upgrade level (+50% per level beyond 1).
+function levelBonus(m) { return 1 + 0.5 * ((m.level || 1) - 1); }
+
 // Count powered Automated Conduits orthogonally adjacent to a machine.
 function adjacentConduits(state, m) {
   return state.machines.filter(c =>
@@ -85,7 +103,7 @@ export function applyTick(state) {
     // Flow bonus: each powered Automated Conduit adjacent to this machine boosts
     // its output throughput (+15% each, capped) — the conduit's spec role of
     // keeping high-throughput machines continuously fed.
-    const flow = 1 + Math.min(0.6, 0.15 * adjacentConduits(state, m));
+    const flow = (1 + Math.min(0.6, 0.15 * adjacentConduits(state, m))) * levelBonus(m);
 
     for (const [res, rate] of Object.entries(def.inputs)) {
       state.resources[res] -= rate;
@@ -93,7 +111,7 @@ export function applyTick(state) {
     for (const [res, rate] of Object.entries(def.outputs)) {
       state.resources[res] = (state.resources[res] || 0) + rate * flow;
     }
-    residueDelta += def.residue;
+    residueDelta += def.residue * levelBonus(m);
     events.push({ type: 'machine-active', id: m.id, machine: m.type });
   }
 
