@@ -24,8 +24,27 @@ export function createState() {
     machines: [],   // { id, type, x, y, active, health }
     golems: [],     // { id, kind, x, y, route, leg }
     enemies: [],    // { id, name, hp, power, loot, x, y }
+    nodes: [],      // { id, element, x, y, rate, reserve } — natural raw-element sources
     nextId: 1,
   };
+}
+
+// Scatter natural raw-element nodes. Each passively trickles its element into the
+// global pool (natural acquisition) until its reserve depletes, keeping the
+// Elemental Refinery fed without manual resupply.
+export function seedNodes(state, specs) {
+  for (const n of specs) {
+    state.nodes.push({ id: state.nextId++, reserve: 5000, rate: 1, ...n });
+  }
+}
+
+function tickNodes(state) {
+  for (const n of state.nodes) {
+    if (n.reserve <= 0) continue;
+    const amount = Math.min(n.rate, n.reserve);
+    state.resources[n.element] = (state.resources[n.element] || 0) + amount;
+    n.reserve -= amount;
+  }
 }
 
 export function place(state, type, x, y) {
@@ -41,6 +60,8 @@ export function applyTick(state) {
   state.tick++;
   const events = [];
   let residueDelta = 0;
+
+  tickNodes(state);
 
   for (const m of state.machines) {
     const def = MACHINES[m.type];

@@ -2,7 +2,7 @@
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
 import { RESOURCES, MACHINES } from './data/gamedata.js';
-import { createState, place, applyTick } from './core/state.js';
+import { createState, place, applyTick, seedNodes } from './core/state.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 
@@ -18,6 +18,13 @@ place(state, 'elementalRefinery', 4, 4);
 place(state, 'aetherCondenser', 6, 4);
 place(state, 'arcaneTransmuter', 5, 6);
 place(state, 'golemsmithHub', 7, 6);
+
+// Natural raw-element nodes feed the refinery; a mana node feeds the condenser.
+seedNodes(state, [
+  { element: 'fire', x: 1, y: 2 }, { element: 'water', x: 10, y: 2 },
+  { element: 'earth', x: 2, y: 9 }, { element: 'air', x: 9, y: 9 },
+  { element: 'manaCrystal', x: 8, y: 2, rate: 0.5 },
+]);
 
 function resize() {
   canvas.width = window.innerWidth;
@@ -115,6 +122,21 @@ function renderWorld() {
   }
   for (let y = 0; y < canvas.height; y += TILE) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+
+  // Raw-element nodes — faint crystalline deposits beneath the factory layer.
+  for (const n of state.nodes) {
+    const px = n.x * TILE + TILE / 2, py = n.y * TILE + TILE / 2;
+    const depleted = n.reserve <= 0;
+    ctx.save();
+    ctx.globalAlpha = depleted ? 0.2 : 0.8;
+    ctx.shadowBlur = depleted ? 0 : 14;
+    ctx.shadowColor = RESOURCES[n.element]?.kind === 'resource' ? '#8fc0ff' : '#a0ffb0';
+    ctx.fillStyle = '#dfe8ff';
+    ctx.font = '22px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(RESOURCES[n.element]?.icon || '◆', px, py);
+    ctx.restore();
   }
 
   for (const m of state.machines) {
