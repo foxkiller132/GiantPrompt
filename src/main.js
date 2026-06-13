@@ -2,7 +2,7 @@
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
 import { RESOURCES, MACHINES, threatTierFor, THREAT_TIERS, MODULES, MACHINE_HEALTH } from './data/gamedata.js';
-import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine, cycleModule, researchProgress } from './core/state.js';
+import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine, cycleModule, researchProgress, nodeClaimed } from './core/state.js';
 import { TECH } from './data/gamedata.js';
 import { ACHIEVEMENTS } from './core/achievements.js';
 import { PERKS, perkLevel, spendPerk, canSpendPerk } from './core/perks.js';
@@ -68,18 +68,18 @@ function newWorld() {
   place(state, 'elementalRefinery', 16, 10);
   place(state, 'aetherCondenser', 18, 10);
   place(state, 'arcaneTransmuter', 17, 12);
-  // A home resource field around the starting area (rate 3/2), plus richer
-  // expansion patches farther out (rate 4) that reward panning across the larger
-  // world and scaling production toward them — the classic factory growth loop.
+  // A home resource field tight around the start (claimed by the starter factory),
+  // plus richer expansion patches farther out that lie dormant until you build out
+  // to claim them — the classic factory-expansion loop.
   seedNodes(state, [
-    // Home field (immediately around the start)
-    { element: 'fire',  x: 12, y: 8,  rate: 3 }, { element: 'water', x: 22, y: 8,  rate: 3 },
-    { element: 'earth', x: 12, y: 14, rate: 3 }, { element: 'air',   x: 22, y: 14, rate: 3 },
-    { element: 'manaCrystal', x: 17, y: 7, rate: 2 }, { element: 'manaCrystal', x: 17, y: 16, rate: 2 },
-    // Expansion patches (farther out, richer)
-    { element: 'fire',  x: 3,  y: 3,  rate: 4 }, { element: 'water', x: 34, y: 4,  rate: 4 },
-    { element: 'earth', x: 4,  y: 20, rate: 4 }, { element: 'air',   x: 33, y: 20, rate: 4 },
-    { element: 'manaCrystal', x: 35, y: 12, rate: 3 },
+    // Home field (within claim range of the starting machines)
+    { element: 'fire',  x: 14, y: 9,  rate: 3 }, { element: 'water', x: 20, y: 9,  rate: 3 },
+    { element: 'earth', x: 14, y: 13, rate: 3 }, { element: 'air',   x: 20, y: 13, rate: 3 },
+    { element: 'manaCrystal', x: 17, y: 8, rate: 2 }, { element: 'manaCrystal', x: 17, y: 14, rate: 2 },
+    // Expansion patches (dormant until claimed; richer reward)
+    { element: 'fire',  x: 4,  y: 3,  rate: 4 }, { element: 'water', x: 33, y: 4,  rate: 4 },
+    { element: 'earth', x: 5,  y: 20, rate: 4 }, { element: 'air',   x: 32, y: 20, rate: 4 },
+    { element: 'manaCrystal', x: 34, y: 12, rate: 3 },
   ]);
   centerCamOn(17, 11);
   lastStatus = 'playing';
@@ -927,18 +927,25 @@ function renderWorld() {
   ctx.lineWidth = 2;
   ctx.strokeRect(0, 0, W, H);
 
-  // Raw-element nodes — faint crystalline deposits beneath the factory layer.
+  // Raw-element nodes — faint crystalline deposits. Unclaimed (no nearby machine)
+  // nodes are dimmed to signal they're dormant until you build out to them.
   for (const n of state.nodes) {
     const px = n.x * TILE + TILE / 2, py = n.y * TILE + TILE / 2;
     const depleted = n.reserve <= 0;
+    const claimed = nodeClaimed(state, n);
     ctx.save();
-    ctx.globalAlpha = depleted ? 0.2 : 0.8;
-    ctx.shadowBlur = depleted ? 0 : 14;
+    ctx.globalAlpha = depleted ? 0.2 : claimed ? 0.85 : 0.4;
+    ctx.shadowBlur = depleted || !claimed ? 0 : 14;
     ctx.shadowColor = RESOURCES[n.element]?.kind === 'resource' ? '#8fc0ff' : '#a0ffb0';
     ctx.fillStyle = '#dfe8ff';
     ctx.font = '22px serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(RESOURCES[n.element]?.icon || '◆', px, py);
+    if (!depleted && !claimed) {
+      ctx.globalAlpha = 0.5; ctx.strokeStyle = '#c9a45a';
+      ctx.setLineDash([3, 4]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(px, py, 16, 0, Math.PI * 2); ctx.stroke();
+    }
     ctx.restore();
   }
 

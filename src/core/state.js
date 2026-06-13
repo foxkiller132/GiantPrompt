@@ -68,9 +68,20 @@ export function seedNodes(state, specs) {
   }
 }
 
+// A node only yields if the player has built infrastructure to tap it: some
+// machine within this radius. This makes spatial expansion meaningful — distant
+// resource patches must be claimed by building out to them.
+const CLAIM_RADIUS = 5;
+
+export function nodeClaimed(state, n) {
+  return state.machines.some(m =>
+    Math.hypot((m.x + 0.5) - (n.x + 0.5), (m.y + 0.5) - (n.y + 0.5)) <= CLAIM_RADIUS);
+}
+
 function tickNodes(state) {
   for (const n of state.nodes) {
     if (n.reserve <= 0) continue;
+    if (!nodeClaimed(state, n)) continue; // unclaimed patches lie dormant
     const amount = Math.min(n.rate, n.reserve);
     state.resources[n.element] = (state.resources[n.element] || 0) + amount;
     n.reserve -= amount;
