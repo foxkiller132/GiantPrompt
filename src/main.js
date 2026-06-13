@@ -8,7 +8,8 @@ import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses, isMuted, setMuted, getVolume, setVolume } from './ui/feedback.js';
 import { Net } from './net/p2p.js';
-import { saveGame, loadGame, hasSave, clearSave } from './core/save.js';
+import { saveGame, loadGame, hasSave, clearSave, anySave, listSlots, slotMeta,
+         loadFromSlot, setActiveSlot, getActiveSlot, clearSlot, saveToSlot } from './core/save.js';
 
 const TICK_MS = 1000;
 const TILE = 64;
@@ -214,6 +215,7 @@ const menuPages = {
   main: document.getElementById('menu-main'),
   howto: document.getElementById('menu-howto'),
   settings: document.getElementById('menu-settings'),
+  slots: document.getElementById('menu-slots'),
 };
 function showMenuPage(name) {
   Object.entries(menuPages).forEach(([k, el]) => { el.hidden = k !== name; });
@@ -221,12 +223,55 @@ function showMenuPage(name) {
 function openMainMenu() {
   setSpeed(0);
   document.getElementById('menu-continue').disabled = !hasSave();
+  document.getElementById('menu-load').disabled = !anySave();
   showMenuPage('main');
   menuVeil.hidden = false;
 }
 function startGame() { menuVeil.hidden = true; Sound.portal(); setSpeed(defaultSpeed); }
 
-document.getElementById('menu-new').addEventListener('click', () => { newWorld(); startGame(); });
+function fmtSlot(meta) {
+  if (!meta) return 'Empty';
+  const when = new Date(meta.ts).toLocaleString();
+  return `${meta.purifications}× purified · ${meta.machines} machines · tick ${meta.tick} — ${when}`;
+}
+
+// Slot picker, reused for starting (mode 'new') and resuming (mode 'load').
+function renderSlots(mode) {
+  const el = menuPages.slots;
+  const title = mode === 'new' ? 'Choose a slot for your new run' : 'Load a saved run';
+  el.innerHTML = `<h2 class="aa-settings-h">${title}</h2>` +
+    listSlots().map(({ slot, meta }) => `
+      <div class="aa-slot">
+        <button class="aa-menu-btn aa-slot-main" data-slot="${slot}"
+          ${mode === 'load' && !meta ? 'disabled' : ''}>
+          <b>Slot ${slot + 1}</b><span class="aa-slot-meta">${fmtSlot(meta)}</span>
+        </button>
+        ${meta ? `<button class="aa-slot-del" data-del="${slot}" title="Delete">✕</button>` : ''}
+      </div>`).join('') +
+    `<button class="aa-menu-btn aa-menu-back">Back</button>`;
+
+  el.querySelectorAll('.aa-slot-main').forEach(btn => btn.addEventListener('click', () => {
+    const slot = Number(btn.dataset.slot);
+    const meta = slotMeta(slot);
+    if (mode === 'new') {
+      if (meta && !confirm(`Slot ${slot + 1} has a run (${meta.purifications}× purified). Overwrite it?`)) return;
+      setActiveSlot(slot);
+      newWorld();
+      saveToSlot(state, slot);
+      startGame();
+    } else {
+      if (!meta) return;
+      if (loadFromSlot(state, slot)) { setActiveSlot(slot); state.status = 'playing'; startGame(); }
+    }
+  }));
+  el.querySelectorAll('.aa-slot-del').forEach(btn => btn.addEventListener('click', () => {
+    clearSlot(Number(btn.dataset.del)); renderSlots(mode);
+  }));
+  el.querySelectorAll('.aa-menu-back').forEach(b => b.addEventListener('click', () => showMenuPage('main')));
+}
+
+document.getElementById('menu-new').addEventListener('click', () => { renderSlots('new'); showMenuPage('slots'); });
+document.getElementById('menu-load').addEventListener('click', () => { renderSlots('load'); showMenuPage('slots'); });
 document.getElementById('menu-continue').addEventListener('click', () => {
   if (loadGame(state)) { state.status = 'playing'; startGame(); }
 });

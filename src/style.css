@@ -189,6 +189,18 @@ html, body {
   border-radius: 5px; padding: 4px 8px;
 }
 .aa-set-divider { height: 1px; background: var(--aa-brass-dim); opacity: 0.4; margin: 12px 0; }
+
+/* ---- Save slots ---- */
+.aa-slot { display: flex; gap: 8px; align-items: stretch; }
+.aa-slot-main { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+.aa-slot-main b { color: var(--aa-brass); }
+.aa-slot-meta { font-size: 11px; opacity: 0.7; }
+.aa-slot-del {
+  font: inherit; cursor: pointer; color: #ffb3b3;
+  background: rgba(60,30,30,0.6); border: 1px solid #7a3a3a; border-radius: 8px;
+  padding: 0 14px; transition: all 180ms;
+}
+.aa-slot-del:hover { background: rgba(120,50,50,0.7); border-color: #d35f5f; }
 .aa-set-danger { border-color: #d35f5f; color: #ffb3b3; }
 
 /* ---- Purification banner ---- */
