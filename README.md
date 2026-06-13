@@ -62,6 +62,11 @@ python3 -m http.server 8000
 - **Demolish mode** to remove machines.
 - **Combat Golems** that hunt enemies; **boss waves** at the late tier.
 - **Residue cleansing** via the Purifier; **sound mute** toggle.
+- **Main menu** (New Game / Continue / Settings / How to Play) and a fleshed-out
+  **settings** page (volume, mute, autosave interval, default speed, delete save).
+- **Continuous, save-based play**: there is no terminal victory — completing a
+  Purification is a repeatable milestone that scrubs residue and escalates the
+  run. Defeat is recoverable by loading your last save.
 
 ## Roadmap (remaining)
 
