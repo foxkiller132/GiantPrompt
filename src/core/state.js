@@ -9,8 +9,14 @@
 
 import { MACHINES, threatTierFor, TECH, TECH_LOCKED } from '../data/gamedata.js';
 
-export const PURIFIER_GOAL = 250;   // long enough that the threat curve fully escalates
+export const PURIFIER_GOAL = 250;   // base goal; scales up with each ascension
 const CLEANSE_PER_GLYPH = 3;        // partial scrub — residue still climbs during purification
+
+// The Glyphs required for the next Purification grow with each completed one, so
+// at high ascension purification competes harder against upgrades and research.
+export function purifierGoal(state) {
+  return Math.round(PURIFIER_GOAL * (1 + (state.purifications || 0) * 0.5));
+}
 import { tickGolems } from './golems.js';
 import { tickEnemies } from './enemies.js';
 import { checkAchievements } from './achievements.js';
@@ -182,10 +188,10 @@ export function applyTick(state) {
     // Milestone: completing a purification is a major reward, not an end. Play
     // continues; each purification scrubs a large chunk of residue and is logged
     // so the run can escalate indefinitely.
-    if (state.purifier >= PURIFIER_GOAL) {
+    if (state.purifier >= purifierGoal(state)) {
+      state.residue = Math.max(0, state.residue - purifierGoal(state) * 4);
       state.purifier = 0;
       state.purifications += 1;
-      state.residue = Math.max(0, state.residue - PURIFIER_GOAL * 4);
       events.push({ type: 'purified', total: state.purifications });
     }
   }

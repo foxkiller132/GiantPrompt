@@ -2,7 +2,7 @@
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
 import { RESOURCES, MACHINES, threatTierFor } from './data/gamedata.js';
-import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine, PURIFIER_GOAL } from './core/state.js';
+import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine } from './core/state.js';
 import { TECH } from './data/gamedata.js';
 import { ACHIEVEMENTS } from './core/achievements.js';
 import { Panel } from './ui/panel.js';
@@ -11,6 +11,7 @@ import { Sound, pulse, drawPulses, isMuted, setMuted, getVolume, setVolume } fro
 import { Net } from './net/p2p.js';
 import { saveGame, loadGame, hasSave, clearSave, anySave, listSlots, slotMeta,
          loadFromSlot, setActiveSlot, getActiveSlot, clearSlot, saveToSlot, renameSlot } from './core/save.js';
+import { purifierGoal } from './core/state.js';
 
 const TICK_MS = 1000;
 const TILE = 64;
@@ -66,7 +67,7 @@ function renderHud(tier) {
   threatTier.style.color = tier.color;
 
   const purFill = document.getElementById('purifier-fill');
-  if (purFill) purFill.style.width = `${(state.purifier / PURIFIER_GOAL) * 100}%`;
+  if (purFill) purFill.style.width = `${(state.purifier / purifierGoal(state)) * 100}%`;
 
   // Threat forecast: combine spawn pressure (residue × ascension) with the power
   // already on the field into a coarse, readable warning level.
