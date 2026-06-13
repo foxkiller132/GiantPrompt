@@ -101,3 +101,18 @@ html, body {
 .aa-build { cursor: pointer; border-radius: 5px; padding-left: 6px; padding-right: 6px; transition: background 160ms, box-shadow 160ms; }
 .aa-build:hover, .aa-build:focus { background: rgba(201,164,90,0.12); box-shadow: inset 0 0 0 1px var(--aa-brass-dim); outline: none; }
 .aa-note { font-size: 13px; opacity: 0.8; line-height: 1.5; }
+
+/* ---- End-of-run overlay ---- */
+#aa-end {
+  position: fixed; z-index: 50; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 32px 44px; text-align: center; max-width: 440px;
+  animation: aa-reveal 700ms ease both;
+}
+#aa-end h1 { margin: 0 0 12px; color: var(--aa-brass); font-size: 30px;
+  text-shadow: 0 0 18px rgba(201,164,90,0.5); }
+#aa-end p { margin: 0; opacity: 0.85; line-height: 1.6; }
+@keyframes aa-reveal {
+  from { opacity: 0; transform: translate(-50%, -46%) scale(0.94); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}

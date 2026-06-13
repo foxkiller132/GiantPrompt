@@ -46,8 +46,23 @@ function renderHud(tier) {
   threatTier.textContent = `${tier.label} · ${Math.floor(state.residue)}`;
   threatTier.style.color = tier.color;
 
+  const purFill = document.getElementById('purifier-fill');
+  if (purFill) purFill.style.width = `${state.purifier}%`;
+
   const golemCount = document.getElementById('golem-count');
   if (golemCount) golemCount.textContent = String(state.golems.length);
+
+  if (state.status !== 'playing' && !document.getElementById('aa-end')) {
+    const won = state.status === 'won';
+    const overlay = document.createElement('div');
+    overlay.id = 'aa-end';
+    overlay.className = 'aa-frame';
+    overlay.innerHTML =
+      `<h1>${won ? '⟡ Zone Purified' : '☠ Factory Overrun'}</h1>` +
+      `<p>${won ? 'You sustained production and neutralized the arcane threat.'
+                : 'The Arcane Residue summoned more than your defenses could hold.'}</p>`;
+    document.body.appendChild(overlay);
+  }
 }
 
 // ---- Panels (draggable, position-persisting) -------------------------------

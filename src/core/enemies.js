@@ -35,8 +35,22 @@ export function tickEnemies(state, rng = Math.random) {
     }
   }
 
-  // --- Movement + sabotage on contact -------------------------------------
+  // --- Defense: golems within range strike the nearest enemy --------------
   const events = [];
+  const GOLEM_RANGE = 1.2, GOLEM_DMG = 2;
+  for (const g of state.golems || []) {
+    let best = null, bestD = GOLEM_RANGE;
+    for (const e of state.enemies) {
+      const d = Math.hypot(e.x - g.x, e.y - g.y);
+      if (d < bestD) { bestD = d; best = e; }
+    }
+    if (best) best.hp -= GOLEM_DMG;
+  }
+  const slain = state.enemies.filter(e => e.hp <= 0).length;
+  if (slain) events.push({ type: 'enemy-slain', count: slain });
+  state.enemies = state.enemies.filter(e => e.hp > 0);
+
+  // --- Movement + sabotage on contact -------------------------------------
   for (const e of state.enemies) {
     const target = nearestMachine(state, e);
     if (!target) continue;
