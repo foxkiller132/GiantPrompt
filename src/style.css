@@ -172,7 +172,8 @@ html, body {
 }
 #menu h1 { margin: 0 0 6px; color: var(--aa-brass); font-size: 32px;
   text-shadow: 0 0 22px rgba(201,164,90,0.55); }
-.aa-menu-tag { margin: 0 0 22px; opacity: 0.7; font-style: italic; }
+.aa-menu-tag { margin: 0 0 4px; opacity: 0.7; font-style: italic; }
+.aa-menu-lifetime { margin: 0 0 20px; font-size: 11px; opacity: 0.55; min-height: 14px; }
 .aa-menu-page { display: flex; flex-direction: column; gap: 10px; }
 .aa-menu-page[hidden] { display: none; }
 .aa-menu-page ul { text-align: left; line-height: 1.7; padding-left: 18px; opacity: 0.9; }

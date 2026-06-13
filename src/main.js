@@ -13,6 +13,7 @@ import { saveGame, loadGame, hasSave, clearSave, anySave, listSlots, slotMeta,
          loadFromSlot, setActiveSlot, getActiveSlot, clearSlot, saveToSlot, renameSlot,
          exportSlot, importToSlot } from './core/save.js';
 import { purifierGoal } from './core/state.js';
+import { getProfile, recordRunStarted, recordPurification, recordSlain } from './core/profile.js';
 
 const TICK_MS = 1000;
 const TILE = 64;
@@ -305,6 +306,11 @@ function openMainMenu() {
   setSpeed(0);
   document.getElementById('menu-continue').disabled = !hasSave();
   document.getElementById('menu-load').disabled = !anySave();
+  const p = getProfile();
+  const lt = document.getElementById('menu-lifetime');
+  if (lt) lt.textContent = p.runs
+    ? `Lifetime: ${p.runs} runs · ${p.purifications} purifications · ${p.enemiesSlain} slain · best ascension ⟡${p.bestAscension}`
+    : '';
   showMenuPage('main');
   menuVeil.hidden = false;
 }
@@ -346,6 +352,7 @@ function renderSlots(mode) {
       newWorld();
       state.runName = name;
       saveToSlot(state, slot);
+      recordRunStarted();
       startGame();
     } else {
       if (!meta) return;
@@ -850,12 +857,12 @@ function simulationStep() {
 
   // Attach feedback to real state changes reported by the authoritative tick.
   for (const ev of result.events) {
-    if (ev.type === 'enemy-slain') Sound.slain();
+    if (ev.type === 'enemy-slain') { Sound.slain(); recordSlain(ev.count); }
     else if (ev.type === 'machine-destroyed') {
       const m = state.machines.find(x => x.id === ev.machine);
       if (m) pulse(m.x, m.y, '#d35f5f');
     } else if (ev.type === 'purified') {
-      Sound.win(); purificationBanner(ev.total);
+      Sound.win(); purificationBanner(ev.total); recordPurification(ev.total);
     } else if (ev.type === 'achievement') {
       Sound.collect(); achievementBanner(ev.name);
     }
