@@ -10,7 +10,8 @@ import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses, isMuted, setMuted, getVolume, setVolume } from './ui/feedback.js';
 import { Net } from './net/p2p.js';
 import { saveGame, loadGame, hasSave, clearSave, anySave, listSlots, slotMeta,
-         loadFromSlot, setActiveSlot, getActiveSlot, clearSlot, saveToSlot, renameSlot } from './core/save.js';
+         loadFromSlot, setActiveSlot, getActiveSlot, clearSlot, saveToSlot, renameSlot,
+         exportSlot, importToSlot } from './core/save.js';
 import { purifierGoal } from './core/state.js';
 
 const TICK_MS = 1000;
@@ -409,6 +410,13 @@ function renderSettings() {
     <div class="aa-set-row">Demolish mode
       <button class="aa-key-btn" data-bind="demolish">${capturingAction === 'demolish' ? 'Press a key…' : keyLabel(keybinds.demolish)}</button></div>
     <div class="aa-set-divider"></div>
+    <div class="aa-set-subhead">Backup &amp; transfer (active slot ${getActiveSlot() + 1})</div>
+    <div class="aa-set-row aa-set-stack">
+      <button id="set-export" class="aa-menu-btn">Export Save Code</button>
+      <textarea id="set-code" rows="2" placeholder="Save code appears here / paste one to import"></textarea>
+      <button id="set-import" class="aa-menu-btn">Import Into Active Slot</button>
+    </div>
+    <div class="aa-set-divider"></div>
     <button id="set-clearsave" class="aa-menu-btn aa-set-danger">Delete Save</button>
     <button class="aa-menu-btn aa-menu-back">Back</button>`;
   el.querySelector('#set-autosave').value = String(autosaveEvery);
@@ -426,6 +434,20 @@ function renderSettings() {
   el.querySelectorAll('.aa-key-btn').forEach(btn => btn.addEventListener('click', () => {
     capturingAction = btn.dataset.bind; renderSettings();
   }));
+  el.querySelector('#set-export').addEventListener('click', () => {
+    const code = exportSlot(getActiveSlot());
+    const ta = el.querySelector('#set-code');
+    ta.value = code || ''; if (code) { ta.select(); Sound.collect(); }
+    else { ta.value = '(active slot is empty)'; }
+  });
+  el.querySelector('#set-import').addEventListener('click', (e) => {
+    const code = el.querySelector('#set-code').value.trim();
+    if (!code) return;
+    const ok = importToSlot(getActiveSlot(), code);
+    e.target.textContent = ok ? 'Imported ✓ (use Continue)' : 'Invalid code';
+    if (ok) Sound.portal();
+    setTimeout(() => { e.target.textContent = 'Import Into Active Slot'; }, 1600);
+  });
   el.querySelector('#set-clearsave').addEventListener('click', (e) => {
     clearSave(); document.getElementById('menu-continue').disabled = true;
     e.target.textContent = 'Save Deleted'; e.target.disabled = true;

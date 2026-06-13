@@ -75,6 +75,26 @@ export function anySave() {
   return Array.from({ length: SLOT_COUNT }, (_, i) => slotMeta(i)).some(Boolean);
 }
 
+// ---- Export / import (portable save codes) ----------------------------------
+// Encodes the stored save (a slot's full record) as base64 so a run can be backed
+// up, shared, or moved between browsers. Import validates the version before
+// writing, and rejects anything malformed.
+export function exportSlot(slot) {
+  const raw = localStorage.getItem(keyFor(slot));
+  if (!raw) return null;
+  try { return btoa(unescape(encodeURIComponent(raw))); } catch { return null; }
+}
+
+export function importToSlot(slot, code) {
+  try {
+    const raw = decodeURIComponent(escape(atob(code.trim())));
+    const data = JSON.parse(raw);
+    if (data.v !== VERSION || !data.state) return false; // reject incompatible/corrupt
+    localStorage.setItem(keyFor(slot), JSON.stringify(data));
+    return true;
+  } catch { return false; }
+}
+
 // ---- Active-slot conveniences (used by autosave + quick Save/Load) ----------
 export function saveGame(state) { return saveToSlot(state, getActiveSlot()); }
 export function loadGame(state) { return loadFromSlot(state, getActiveSlot()); }
