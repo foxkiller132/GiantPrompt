@@ -47,6 +47,14 @@ function tickNodes(state) {
   }
 }
 
+// Count powered Automated Conduits orthogonally adjacent to a machine.
+function adjacentConduits(state, m) {
+  return state.machines.filter(c =>
+    c.type === 'automatedConduit' && c.active !== false &&
+    Math.abs(c.x - m.x) + Math.abs(c.y - m.y) === 1
+  ).length;
+}
+
 export function place(state, type, x, y) {
   if (!MACHINES[type]) throw new Error(`Unknown machine type: ${type}`);
   const machine = { id: state.nextId++, type, x, y, active: true };
@@ -74,11 +82,16 @@ export function applyTick(state) {
     m.active = canRun;
     if (!canRun) continue;
 
+    // Flow bonus: each powered Automated Conduit adjacent to this machine boosts
+    // its output throughput (+15% each, capped) — the conduit's spec role of
+    // keeping high-throughput machines continuously fed.
+    const flow = 1 + Math.min(0.6, 0.15 * adjacentConduits(state, m));
+
     for (const [res, rate] of Object.entries(def.inputs)) {
       state.resources[res] -= rate;
     }
     for (const [res, rate] of Object.entries(def.outputs)) {
-      state.resources[res] = (state.resources[res] || 0) + rate;
+      state.resources[res] = (state.resources[res] || 0) + rate * flow;
     }
     residueDelta += def.residue;
     events.push({ type: 'machine-active', id: m.id, machine: m.type });

@@ -147,6 +147,17 @@ function renderWorld() {
   for (const m of state.machines) {
     const def = MACHINES[m.type];
     const px = m.x * TILE, py = m.y * TILE;
+
+    // Conduits render as a slim glowing channel rather than a full machine block.
+    if (m.type === 'automatedConduit') {
+      ctx.save();
+      ctx.shadowBlur = m.active ? 14 : 0; ctx.shadowColor = '#6fa8ff';
+      ctx.fillStyle = m.active ? 'rgba(111,168,255,0.55)' : 'rgba(90,95,110,0.4)';
+      ctx.fillRect(px + 6, py + TILE / 2 - 7, TILE - 12, 14);
+      ctx.restore();
+      continue;
+    }
+
     const glow = m.active ? 18 : 0;
     ctx.save();
     ctx.shadowBlur = glow;
