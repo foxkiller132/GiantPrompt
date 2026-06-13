@@ -29,48 +29,45 @@ python3 -m http.server 8000
 - **Single source of truth** — `src/data/gamedata.js` encodes the spec's exact
   machines, recipes, and the residue→threat curve.
 
-## Implemented
+## How it plays
 
-- Core resource/machine model (Aether Condenser, Elemental Refinery, Arcane
-  Transmuter, Glyph Carver, Golemsmith Hub, Automated Conduit, Portal Generator).
-- Deterministic per-tick simulation with input gating and residue accumulation.
-- Threat meter driven directly by total Arcane Residue (Calm → Goblins →
-  Wraiths → Dragons).
-- Draggable, position-persisting (sticky-anchor) HUD panels.
-- Canvas world render with glowing active machines.
-- **Build/placement** interaction: select a blueprint → ghost preview → place.
-- **Golem units** forged by the Golemsmith Hub that patrol routes and defend.
-- **Enemy spawning & combat** scaled to residue; machines take damage / fall.
-- **Victory & defeat**: channel surplus Glyphs into the Zone Purifier to win;
-  lose if the factory is wiped out. Animated end-of-run overlay.
-- **Raw-element node extraction** for a self-sustaining economy.
-- **Audio + visual feedback** (WebAudio chimes + canvas pulse rings).
-- **Automated Conduit flow bonus** boosting adjacent machine throughput.
-- **Portal Generator paired teleport** for golems between linked portals.
-- **Machine upgrades**: spend Glyphs to level up output (per-level bonus).
-- **P2P multiplayer (WebRTC)** with the host as **Designated Authority Client**:
-  the host runs the authoritative tick and broadcasts snapshots; guests render
-  them and send validated intents. Manual SDP signaling (no server) via the
-  Network panel.
-- **Save/load** with autosave (versioned localStorage snapshots).
-- **Research tech tree** gating advanced machines (Transmuter as research lab).
-- **Peer presence cursors** in P2P sessions.
-- **Machine inspector** tooltip (recipe, level, status, upgrade cost).
-- **Minimap** overview of machines, enemies, golems, and nodes.
-- **Ward Towers** — mana-powered defensive structures.
-- **Pause + 1×/2×/3× game speed** controls.
-- **Demolish mode** to remove machines.
-- **Combat Golems** that hunt enemies; **boss waves** at the late tier.
-- **Residue cleansing** via the Purifier; **sound mute** toggle.
-- **Main menu** (New Game / Continue / Settings / How to Play) and a fleshed-out
-  **settings** page (volume, mute, autosave interval, default speed, delete save).
-- **Continuous, save-based play**: there is no terminal victory — completing a
-  Purification is a repeatable milestone that scrubs residue and escalates the
-  run. Defeat is recoverable by loading your last save.
+A single, long run — the pace and pull of Factorio, in an arcane setting. There
+is no prestige, no new-game-plus, no terminal win: you grow one factory over a
+long time and the world grows with it.
 
-## Roadmap (remaining)
+- **Scale production.** Every recipe feeds the next: raw elements → refined
+  elements & ingots → components & glyphs → runes → high-tier machines. Demand
+  climbs, so you build *more* and balance ratios.
+- **Research is continuous.** Selecting a tech makes your factory feed it over
+  time; advancing means building and sustaining throughput. The **Items** panel
+  shows live amounts and net production rates so you can find bottlenecks.
+- **Pollution finds equilibrium.** Machines emit **Arcane Residue**, which draws
+  enemies. Residue passively dissipates, so a steady factory settles at a steady
+  threat level — you escalate the threat by *expanding*, and manage it by
+  purifying, Resonance modules, or the Void Conduit wonder.
+- **Defend in layers.** Ward Towers (from the start), Combat/Worker/Mining
+  Golems, and rune-fuelled Aegis Spires. Bosses make for your economy core, so
+  perimeter walls aren't enough.
+- **Deep tactical levers.** Per-machine levels, 2× **overclock** (shift-click),
+  and **Glyph modules** (alt-click) trade output, input, and residue.
+  Run-wide **Ascension Perks** and one-time **Wonders** reshape the late game.
+- **The Purifier is a choice.** Toggle it to spend surplus Glyphs scrubbing
+  residue and earning ascension perks — competing with research and upgrades for
+  the same Glyphs. Each Purification is a milestone, not an ending; the threat
+  ascends a tier harder and the run deepens.
 
-1. Hosted signaling option (QR/relay) to replace manual SDP copy/paste
-   (requires a relay/signaling server — out of scope for a serverless build).
-2. >2-peer mesh and Mining Golems.
-3. Balance tuning pass once play-tested.
+**Direction** comes from the **Goals** panel (a guided objective ladder),
+tracked by run **stats**, **achievements**, and a cross-run **lifetime profile**.
+**World events** (mana surges, arcane storms) keep long stretches dynamic.
+
+## Sessions & multiplayer
+
+- **Save-based:** named save slots with metadata, autosave, export/import codes.
+- **Co-op:** WebRTC **P2P** with the host as Designated Authority Client and
+  live peer presence cursors (manual SDP signaling, no server).
+
+## Possible future work
+
+- Hosted signaling (QR/relay) to replace manual SDP copy/paste (needs a server).
+- More intermediate recipe tiers and late research to extend the ladder.
+- A balance/feel pass once the game has been played at length in a browser.
