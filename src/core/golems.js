@@ -11,6 +11,7 @@ import { MACHINES } from '../data/gamedata.js';
 const FORGE_EVERY = 6;      // ticks between golem production
 const GOLEM_SPEED = 0.15;   // tiles per tick (workers)
 const COMBAT_SPEED = 0.22;  // combat golems are faster hunters
+const MINE_BONUS = 1;       // extra element extracted per tick by a stationed miner
 const MAX_GOLEMS = 12;
 
 export function tickGolems(state) {
@@ -25,11 +26,16 @@ export function tickGolems(state) {
       // Forge a Combat Golem when enemies threaten and few are deployed; otherwise
       // a Worker that patrols the production route.
       const combatCount = state.golems.filter(g => g.kind === 'combat').length;
+      const miningCount = state.golems.filter(g => g.kind === 'mining').length;
       const wantCombat = (state.enemies?.length || 0) > 0 && combatCount < 4;
-      state.golems.push(wantCombat
-        ? { id: state.nextId++, kind: 'combat', x: hub.x + 0.5, y: hub.y + 0.5 }
-        : { id: state.nextId++, kind: 'worker', x: hub.x + 0.5, y: hub.y + 0.5,
-            route: assignRoute(state, hub), leg: 0 });
+      const wantMining = !wantCombat && miningCount < 3 &&
+        (state.nodes || []).some(n => n.reserve > 0);
+      let golem;
+      if (wantCombat) golem = { id: state.nextId++, kind: 'combat', x: hub.x + 0.5, y: hub.y + 0.5 };
+      else if (wantMining) golem = { id: state.nextId++, kind: 'mining', x: hub.x + 0.5, y: hub.y + 0.5 };
+      else golem = { id: state.nextId++, kind: 'worker', x: hub.x + 0.5, y: hub.y + 0.5,
+                     route: assignRoute(state, hub), leg: 0 };
+      state.golems.push(golem);
     }
   }
 
@@ -46,6 +52,25 @@ export function tickGolems(state) {
       const dx = target.x - g.x, dy = target.y - g.y;
       const dist = Math.hypot(dx, dy) || 1;
       if (dist > 0.4) { g.x += (dx / dist) * COMBAT_SPEED; g.y += (dy / dist) * COMBAT_SPEED; }
+      continue;
+    }
+    if (g.kind === 'mining') {
+      // Travel to the nearest live node; while stationed, boost its extraction.
+      let node = null, bestD = Infinity;
+      for (const n of state.nodes || []) {
+        if (n.reserve <= 0) continue;
+        const d = Math.hypot((n.x + 0.5) - g.x, (n.y + 0.5) - g.y);
+        if (d < bestD) { bestD = d; node = n; }
+      }
+      if (!node) continue;
+      const dx = (node.x + 0.5) - g.x, dy = (node.y + 0.5) - g.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      if (dist > 0.4) { g.x += (dx / dist) * GOLEM_SPEED; g.y += (dy / dist) * GOLEM_SPEED; }
+      else {
+        const bonus = Math.min(MINE_BONUS, node.reserve);
+        state.resources[node.element] = (state.resources[node.element] || 0) + bonus;
+        node.reserve -= bonus;
+      }
       continue;
     }
     // Workers patrol their assigned route.

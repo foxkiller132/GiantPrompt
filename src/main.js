@@ -434,17 +434,22 @@ function renderWorld() {
     ctx.restore();
   }
 
-  // Golems — workers glow teal; combat golems are larger and amber-edged.
+  // Golems — workers teal, combat amber-edged, miners blue.
+  const GOLEM_STYLE = {
+    worker: { glow: '#9fffd0', fill: '#cfffe6', r: 6 },
+    combat: { glow: '#ffd89a', fill: '#ffe6b0', r: 7, edge: '#c9a45a' },
+    mining: { glow: '#9fc0ff', fill: '#bcd4ff', r: 6, edge: '#5f8fd3' },
+  };
   for (const g of state.golems) {
     const px = g.x * TILE, py = g.y * TILE;
-    const combat = g.kind === 'combat';
+    const st = GOLEM_STYLE[g.kind] || GOLEM_STYLE.worker;
     ctx.save();
-    ctx.shadowBlur = 10; ctx.shadowColor = combat ? '#ffd89a' : '#9fffd0';
-    ctx.fillStyle = combat ? '#ffe6b0' : '#cfffe6';
+    ctx.shadowBlur = 10; ctx.shadowColor = st.glow;
+    ctx.fillStyle = st.fill;
     ctx.beginPath();
-    ctx.arc(px, py, combat ? 7 : 6, 0, Math.PI * 2);
+    ctx.arc(px, py, st.r, 0, Math.PI * 2);
     ctx.fill();
-    if (combat) { ctx.strokeStyle = '#c9a45a'; ctx.lineWidth = 2; ctx.stroke(); }
+    if (st.edge) { ctx.strokeStyle = st.edge; ctx.lineWidth = 2; ctx.stroke(); }
     ctx.restore();
   }
 
