@@ -2,7 +2,7 @@
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
 import { RESOURCES, MACHINES, threatTierFor } from './data/gamedata.js';
-import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine } from './core/state.js';
+import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine, PURIFIER_GOAL } from './core/state.js';
 import { TECH } from './data/gamedata.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
@@ -59,7 +59,7 @@ function renderHud(tier) {
   threatTier.style.color = tier.color;
 
   const purFill = document.getElementById('purifier-fill');
-  if (purFill) purFill.style.width = `${state.purifier}%`;
+  if (purFill) purFill.style.width = `${(state.purifier / PURIFIER_GOAL) * 100}%`;
 
   const golemCount = document.getElementById('golem-count');
   if (golemCount) golemCount.textContent = String(state.golems.length);

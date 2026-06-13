@@ -8,6 +8,9 @@
 // (and desync/cheat detection) tractable later.
 
 import { MACHINES, threatTierFor, TECH, TECH_LOCKED } from '../data/gamedata.js';
+
+export const PURIFIER_GOAL = 250;   // long enough that the threat curve fully escalates
+const CLEANSE_PER_GLYPH = 3;        // partial scrub — residue still climbs during purification
 import { tickGolems } from './golems.js';
 import { tickEnemies } from './enemies.js';
 
@@ -156,8 +159,6 @@ export function applyTick(state) {
 
   // Victory: channel surplus Glyphs into the Zone Purifier. Sustaining a fully
   // automated, defended factory long enough purifies the zone and wins the run.
-  const PURIFIER_GOAL = 100;
-  const CLEANSE_PER_GLYPH = 8; // residue scrubbed per Glyph channeled
   if (state.status === 'playing' && state.resources.glyph >= 1) {
     state.resources.glyph -= 1;
     state.purifier = Math.min(PURIFIER_GOAL, state.purifier + 1);
