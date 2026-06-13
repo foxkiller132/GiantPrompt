@@ -9,6 +9,7 @@
 
 import { MACHINES, threatTierFor } from '../data/gamedata.js';
 import { tickGolems } from './golems.js';
+import { tickEnemies } from './enemies.js';
 
 export function createState() {
   return {
@@ -18,8 +19,9 @@ export function createState() {
       manaCrystal: 25, fire: 40, water: 40, earth: 40, air: 40,
       manaStream: 0, refined: 0, ingot: 0, component: 4, glyph: 0,
     },
-    machines: [],   // { id, type, x, y, active }
-    golems: [],     // reserved for the unit system (next iteration)
+    machines: [],   // { id, type, x, y, active, health }
+    golems: [],     // { id, kind, x, y, route, leg }
+    enemies: [],    // { id, name, hp, power, loot, x, y }
     nextId: 1,
   };
 }
@@ -60,6 +62,8 @@ export function applyTick(state) {
   }
 
   tickGolems(state);
+  const enemyResult = tickEnemies(state);
+  events.push(...enemyResult.events);
 
   state.residue += residueDelta;
   return { events, residueDelta, tier: threatTierFor(state.residue) };

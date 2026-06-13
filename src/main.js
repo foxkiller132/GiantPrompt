@@ -134,6 +134,18 @@ function renderWorld() {
     ctx.restore();
   }
 
+  // Enemies — ember-red motes converging on the factory.
+  for (const e of state.enemies) {
+    const px = e.x * TILE, py = e.y * TILE;
+    ctx.save();
+    ctx.shadowBlur = 12; ctx.shadowColor = '#ff6b6b';
+    ctx.fillStyle = '#ffb3b3';
+    ctx.beginPath();
+    ctx.arc(px, py, 5 + Math.min(6, e.power), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   build.drawGhost(ctx);
 }
 
