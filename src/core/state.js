@@ -11,6 +11,7 @@ import { MACHINES, threatTierFor, TECH, TECH_LOCKED, MODULES, MODULE_CYCLE } fro
 
 export const PURIFIER_GOAL = 250;   // base goal; scales up with each ascension
 const CLEANSE_PER_GLYPH = 3;        // partial scrub — residue still climbs during purification
+const RESIDUE_DECAY = 0.996;        // ~0.4%/tick passive dissipation -> pollution equilibrium
 
 // The Glyphs required for the next Purification grow with each completed one, so
 // at high ascension purification competes harder against upgrades and research.
@@ -250,6 +251,11 @@ export function applyTick(state) {
   events.push(...enemyResult.events);
 
   state.residue += residueDelta * residueMultiplier(state) * wonderResidueMult(state) * eventResidueMult(state);
+  // Passive dissipation (the environment absorbing pollution). This creates a
+  // Factorio-style equilibrium: a steady factory settles at a steady residue
+  // level (≈ generation / RESIDUE_DECAY), so the long run is sustainable and you
+  // escalate threat by *expanding*, not merely by existing.
+  state.residue = Math.max(0, state.residue * RESIDUE_DECAY);
 
   // Run statistics.
   if (state.stats) {
