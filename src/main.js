@@ -479,6 +479,13 @@ function renderSettings() {
   el.querySelectorAll('.aa-menu-back').forEach(b => b.addEventListener('click', () => showMenuPage('main')));
 }
 
+// In-game system menu: save the current run, then return to the main menu (which
+// exposes Settings, Continue, and quitting). Available via the dock ☰ button.
+document.getElementById('dock-menu').addEventListener('click', () => {
+  if (state.status === 'playing' && !net.connected) saveGame(state);
+  openMainMenu();
+});
+
 // Boot into the main menu rather than straight into play.
 openMainMenu();
 
