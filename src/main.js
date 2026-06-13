@@ -17,7 +17,7 @@ import { saveGame, loadGame, hasSave, clearSave, anySave, listSlots, slotMeta,
          loadFromSlot, setActiveSlot, getActiveSlot, clearSlot, saveToSlot, renameSlot,
          exportSlot, importToSlot } from './core/save.js';
 import { purifierGoal } from './core/state.js';
-import { getProfile, recordRunStarted, recordPurification, recordSlain } from './core/profile.js';
+import { getProfile, recordRunStarted, recordPurification, recordSlain, recordPlayTicks } from './core/profile.js';
 
 const TICK_MS = 1000;
 const TILE = 64;
@@ -364,6 +364,11 @@ function fmtPlaytime(ticks) {
   const m = Math.floor(ticks / 60), s = ticks % 60;
   return `${m}m ${String(s).padStart(2, '0')}s`;
 }
+// Lifetime playtime in coarse hours/minutes (a tick is ~1 second at 1x).
+function fmtLifetime(ticks) {
+  const h = Math.floor(ticks / 3600), m = Math.floor((ticks % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
 function refreshStats() {
   const list = document.getElementById('stats-list');
   if (!list || !state.stats) return;
@@ -489,7 +494,7 @@ function openMainMenu() {
   const p = getProfile();
   const lt = document.getElementById('menu-lifetime');
   if (lt) lt.textContent = p.runs
-    ? `Lifetime: ${p.runs} runs · ${p.purifications} purifications · ${p.enemiesSlain} slain · best ascension ⟡${p.bestAscension}`
+    ? `Lifetime: ${p.runs} runs · ${fmtLifetime(p.playTicks)} played · ${p.purifications} purifications · ${p.enemiesSlain} slain · best ascension ⟡${p.bestAscension}`
     : '';
   showMenuPage('main');
   menuVeil.hidden = false;
@@ -1195,6 +1200,8 @@ function simulationStep() {
   trackRates(before, state.resources);
   if (net.role === 'host') net.broadcast(snapshot(state));
   if (autosaveEvery > 0 && state.tick % autosaveEvery === 0) saveGame(state);
+  // Accumulate lifetime playtime in batches (avoids a localStorage write/tick).
+  if (state.tick % 30 === 0) recordPlayTicks(30);
 
   // Attach feedback to real state changes reported by the authoritative tick.
   for (const ev of result.events) {
