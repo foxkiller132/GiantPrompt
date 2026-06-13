@@ -5,6 +5,7 @@ import { RESOURCES, MACHINES } from './data/gamedata.js';
 import { createState, place, applyTick, seedNodes } from './core/state.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
+import { Sound, pulse, drawPulses } from './ui/feedback.js';
 
 const TICK_MS = 1000;
 const TILE = 64;
@@ -101,7 +102,11 @@ document.querySelectorAll('.aa-dock-btn').forEach(btn => {
 });
 
 // ---- Build / placement -----------------------------------------------------
-const build = new BuildController(state, canvas, TILE, () => renderHud(tier));
+const build = new BuildController(state, canvas, TILE, (m) => {
+  Sound.place();
+  pulse(m.x, m.y, '#c9a45a');
+  renderHud(tier);
+});
 
 // Selecting a blueprint enters build mode (Shift+drop releases the tool).
 document.querySelectorAll('.aa-build').forEach(row => {
@@ -183,6 +188,7 @@ function renderWorld() {
     ctx.restore();
   }
 
+  drawPulses(ctx, TILE, 1 / 60);
   build.drawGhost(ctx);
 }
 
@@ -198,9 +204,25 @@ function roundRect(c, x, y, w, h, r) {
 
 // ---- Loops -----------------------------------------------------------------
 let tier;
+let lastStatus = 'playing';
 function simulationStep() {
   const result = applyTick(state);
   tier = result.tier;
+
+  // Attach feedback to real state changes reported by the authoritative tick.
+  for (const ev of result.events) {
+    if (ev.type === 'enemy-slain') Sound.slain();
+    else if (ev.type === 'machine-destroyed') {
+      const m = state.machines.find(x => x.id === ev.machine);
+      if (m) pulse(m.x, m.y, '#d35f5f');
+    }
+  }
+  if (state.status !== lastStatus) {
+    if (state.status === 'won') Sound.win();
+    else if (state.status === 'lost') Sound.lose();
+    lastStatus = state.status;
+  }
+
   renderHud(tier);
 }
 setInterval(simulationStep, TICK_MS);
