@@ -112,6 +112,17 @@ export const MACHINES = {
   },
 };
 
+// Per-machine Glyph modules: an optional installed glyph giving a targeted
+// trade-off, distinct from leveling (raw output) and overclock (burst). Effects
+// are multipliers applied in the production loop. Installing one costs a Glyph.
+export const MODULES = {
+  resonance:  { name: 'Resonance Glyph',  residue: 0.5, desc: '-50% residue from this machine' },
+  channeling: { name: 'Channeling Glyph', input: 0.75, desc: '-25% input cost' },
+  amplifier:  { name: 'Amplifier Glyph',  output: 1.5, residue: 1.5, desc: '+50% output, +50% residue' },
+};
+// Alt-click cycles through these in order (null = remove).
+export const MODULE_CYCLE = [null, 'resonance', 'channeling', 'amplifier'];
+
 // Research tree. The Arcane Transmuter is the "research lab": spending the listed
 // resources unlocks high-tier machines. `requires` enforces progression order.
 // Aether Condenser and Elemental Refinery are available from the start.

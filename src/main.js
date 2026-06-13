@@ -1,8 +1,8 @@
 // Arcane Automata — bootstrap & game loop.
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
-import { RESOURCES, MACHINES, threatTierFor, THREAT_TIERS } from './data/gamedata.js';
-import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine } from './core/state.js';
+import { RESOURCES, MACHINES, threatTierFor, THREAT_TIERS, MODULES } from './data/gamedata.js';
+import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine, cycleModule } from './core/state.js';
 import { TECH } from './data/gamedata.js';
 import { ACHIEVEMENTS } from './core/achievements.js';
 import { PERKS, perkLevel, spendPerk, canSpendPerk } from './core/perks.js';
@@ -581,6 +581,8 @@ net.onIntent = (kind, args) => {
   } else if (kind === 'overclock') {
     const m = state.machines.find(x => x.id === args.id);
     if (m) m.overclock = !m.overclock;
+  } else if (kind === 'module') {
+    cycleModule(state, args.id);
   }
 };
 
@@ -616,9 +618,10 @@ canvas.addEventListener('pointermove', (e) => {
     `<div class="aa-insp-grid"><div><b>In</b><br>${fmtRates(def.inputs)}</div>` +
     `<div><b>Out</b><br>${fmtRates(def.outputs)}</div></div>` +
     `<div class="aa-insp-foot">${m.active === false ? '⏸ idle' : '⚡ active'}` +
-    `${m.overclock ? ' · ⚡<b>2× overclocked</b>' : ''} · ` +
+    `${m.overclock ? ' · ⚡<b>2× overclocked</b>' : ''}` +
+    `${m.module ? ` · 𖤓<b>${MODULES[m.module].name}</b> (${MODULES[m.module].desc})` : ''} · ` +
     `residue ${def.residue}/tick · upgrade: ${upgradeCost(lvl)} ${RESOURCES.glyph.icon}` +
-    `<br><span class="aa-insp-hint">click: upgrade · shift-click: overclock</span></div>`;
+    `<br><span class="aa-insp-hint">click: upgrade · shift: overclock · alt: glyph module</span></div>`;
   inspector.hidden = false;
   inspector.style.left = `${Math.min(e.clientX + 16, window.innerWidth - 250)}px`;
   inspector.style.top = `${Math.min(e.clientY + 16, window.innerHeight - 160)}px`;
@@ -660,6 +663,14 @@ canvas.addEventListener('click', (e) => {
   if (demolishMode) {
     if (net.role === 'guest' && net.connected) { net.sendIntent('demolish', { id: m.id }); return; }
     if (removeMachine(state, m.id)) { Sound.slain(); pulse(m.x, m.y, '#d35f5f'); renderHud(tier); }
+    return;
+  }
+
+  // Alt-click cycles the installed Glyph module (costs a Glyph to install).
+  if (e.altKey) {
+    if (net.role === 'guest' && net.connected) { net.sendIntent('module', { id: m.id }); return; }
+    const res = cycleModule(state, m.id);
+    if (res === false) Sound.slain(); else { Sound.collect(); pulse(m.x, m.y, '#9fc0ff'); renderHud(tier); }
     return;
   }
 
@@ -778,6 +789,12 @@ function renderWorld() {
       ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.fillText('⚡', px + 6, py + 4);
+    }
+    if (m.module) {
+      ctx.fillStyle = '#9fc0ff';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+      ctx.fillText('𖤓', px + 6, py + TILE - 8);
     }
   }
 

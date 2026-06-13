@@ -7,7 +7,7 @@
 // Keeping mutation centralized and deterministic is what makes that validation
 // (and desync/cheat detection) tractable later.
 
-import { MACHINES, threatTierFor, TECH, TECH_LOCKED } from '../data/gamedata.js';
+import { MACHINES, threatTierFor, TECH, TECH_LOCKED, MODULES, MODULE_CYCLE } from '../data/gamedata.js';
 
 export const PURIFIER_GOAL = 250;   // base goal; scales up with each ascension
 const CLEANSE_PER_GLYPH = 3;        // partial scrub — residue still climbs during purification
@@ -65,6 +65,20 @@ function tickNodes(state) {
     state.resources[n.element] = (state.resources[n.element] || 0) + amount;
     n.reserve -= amount;
   }
+}
+
+// Cycle a machine's installed Glyph module (none → resonance → channeling →
+// amplifier → none). Installing a module costs 1 Glyph; removing is free.
+// Returns the new module id (or null), or false if it couldn't be afforded.
+export function cycleModule(state, machineId) {
+  const m = state.machines.find(x => x.id === machineId);
+  if (!m) return false;
+  const idx = MODULE_CYCLE.indexOf(m.module ?? null);
+  const next = MODULE_CYCLE[(idx + 1) % MODULE_CYCLE.length];
+  if (next && (state.resources.glyph || 0) < 1) return false; // installing costs a Glyph
+  if (next) state.resources.glyph -= 1;
+  m.module = next;
+  return next;
 }
 
 // Remove a machine (demolish). Returns true if one was removed.
@@ -147,10 +161,14 @@ export function applyTick(state) {
 
     // Overclock doubles throughput (and input draw + residue) for burst output.
     const oc = m.overclock ? 2 : 1;
+    // Installed Glyph module trade-offs (input/output/residue multipliers).
+    const mod = MODULES[m.module] || {};
+    const inMul = (mod.input ?? 1) * oc;
+    const resMul = mod.residue ?? 1;
 
-    // A machine runs only if not suppressed and every (overclocked) input is available.
+    // A machine runs only if not suppressed and every (modified) input is available.
     const canRun = !m.suppressed && Object.entries(def.inputs).every(
-      ([res, rate]) => (state.resources[res] || 0) >= rate * oc
+      ([res, rate]) => (state.resources[res] || 0) >= rate * inMul
     );
 
     m.active = canRun;
@@ -159,15 +177,16 @@ export function applyTick(state) {
     // Flow bonus: each powered Automated Conduit adjacent to this machine boosts
     // its output throughput (+15% each, capped) — the conduit's spec role of
     // keeping high-throughput machines continuously fed.
-    const flow = (1 + Math.min(0.6, 0.15 * adjacentConduits(state, m))) * levelBonus(m) * outMult * oc;
+    const flow = (1 + Math.min(0.6, 0.15 * adjacentConduits(state, m)))
+      * levelBonus(m) * outMult * oc * (mod.output ?? 1);
 
     for (const [res, rate] of Object.entries(def.inputs)) {
-      state.resources[res] -= rate * oc;
+      state.resources[res] -= rate * inMul;
     }
     for (const [res, rate] of Object.entries(def.outputs)) {
       state.resources[res] = (state.resources[res] || 0) + rate * flow;
     }
-    residueDelta += def.residue * levelBonus(m) * oc;
+    residueDelta += def.residue * levelBonus(m) * oc * resMul;
     events.push({ type: 'machine-active', id: m.id, machine: m.type });
   }
 
