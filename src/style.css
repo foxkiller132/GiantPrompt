@@ -98,4 +98,6 @@ html, body {
   padding: 5px 0; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .aa-row em { color: var(--aa-brass-dim); font-style: italic; font-size: 12px; }
+.aa-build { cursor: pointer; border-radius: 5px; padding-left: 6px; padding-right: 6px; transition: background 160ms, box-shadow 160ms; }
+.aa-build:hover, .aa-build:focus { background: rgba(201,164,90,0.12); box-shadow: inset 0 0 0 1px var(--aa-brass-dim); outline: none; }
 .aa-note { font-size: 13px; opacity: 0.8; line-height: 1.5; }

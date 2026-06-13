@@ -4,6 +4,7 @@
 import { RESOURCES, MACHINES } from './data/gamedata.js';
 import { createState, place, applyTick } from './core/state.js';
 import { Panel } from './ui/panel.js';
+import { BuildController } from './ui/build.js';
 
 const TICK_MS = 1000;
 const TILE = 64;
@@ -57,8 +58,9 @@ const panels = {
     Object.values(RESOURCES).map(r =>
       `<div class="aa-row"><span>${r.icon} ${r.name}</span><em>${r.kind}</em></div>`).join(''))),
   blueprints: new Panel('blueprints', 'Blueprint Library', buildPanelBody(
-    Object.values(MACHINES).map(m =>
-      `<div class="aa-row"><span>${m.glyph} ${m.name}</span><em>${m.purpose}</em></div>`).join(''))),
+    Object.entries(MACHINES).map(([key, m]) =>
+      `<div class="aa-row aa-build" data-build="${key}" role="button" tabindex="0">` +
+      `<span>${m.glyph} ${m.name}</span><em>${m.purpose}</em></div>`).join(''))),
   golems: new Panel('golems', 'Golem Console', buildPanelBody(
     '<p class="aa-note">Glyph-programmed routing arrives next iteration.</p>')),
   network: new Panel('network', 'Network — P2P', buildPanelBody(
@@ -68,6 +70,16 @@ const panels = {
 
 document.querySelectorAll('.aa-dock-btn').forEach(btn => {
   btn.addEventListener('click', () => panels[btn.dataset.panel].toggle());
+});
+
+// ---- Build / placement -----------------------------------------------------
+const build = new BuildController(state, canvas, TILE, () => renderHud(tier));
+
+// Selecting a blueprint enters build mode (Shift+drop releases the tool).
+document.querySelectorAll('.aa-build').forEach(row => {
+  const pick = () => build.select(row.dataset.build);
+  row.addEventListener('click', pick);
+  row.addEventListener('keydown', (e) => { if (e.key === 'Enter') pick(); });
 });
 
 // ---- World render ----------------------------------------------------------
@@ -103,6 +115,8 @@ function renderWorld() {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(def.glyph, px + (TILE - 6) / 2, py + (TILE - 6) / 2);
   }
+
+  build.drawGhost(ctx);
 }
 
 function roundRect(c, x, y, w, h, r) {
