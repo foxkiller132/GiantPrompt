@@ -13,6 +13,7 @@ export const PURIFIER_GOAL = 250;   // long enough that the threat curve fully e
 const CLEANSE_PER_GLYPH = 3;        // partial scrub — residue still climbs during purification
 import { tickGolems } from './golems.js';
 import { tickEnemies } from './enemies.js';
+import { checkAchievements } from './achievements.js';
 
 export function createState() {
   return {
@@ -28,6 +29,7 @@ export function createState() {
     runName: '',    // player-given label for this run (shown in the slot list)
     purifications: 0, // completed purifications (escalating endgame, never terminal)
     stats: { enemiesSlain: 0, machinesBuilt: 0, peakResidue: 0 }, // run statistics
+    achievements: [], // unlocked achievement ids
     status: 'playing', // 'playing' | 'lost' (defeat is recoverable from a save)
     machines: [],   // { id, type, x, y, active, health }
     golems: [],     // { id, kind, x, y, route, leg }
@@ -190,6 +192,10 @@ export function applyTick(state) {
   // Defeat: the factory is wiped out.
   if (state.status === 'playing' && state.machines.length === 0 && state.tick > 5) {
     state.status = 'lost';
+  }
+
+  for (const a of checkAchievements(state)) {
+    events.push({ type: 'achievement', id: a.id, name: a.name });
   }
 
   return { events, residueDelta, tier: threatTierFor(state.residue), status: state.status };

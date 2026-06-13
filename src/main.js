@@ -4,6 +4,7 @@
 import { RESOURCES, MACHINES, threatTierFor } from './data/gamedata.js';
 import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine, PURIFIER_GOAL } from './core/state.js';
 import { TECH } from './data/gamedata.js';
+import { ACHIEVEMENTS } from './core/achievements.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses, isMuted, setMuted, getVolume, setVolume } from './ui/feedback.js';
@@ -73,6 +74,7 @@ function renderHud(tier) {
   refreshBlueprintLocks();
   refreshResearch();
   refreshStats();
+  refreshAchievements();
 
   if (state.status === 'lost' && !document.getElementById('aa-end')) {
     setSpeed(0);
@@ -98,9 +100,18 @@ function renderHud(tier) {
 
 // Transient celebratory banner for a completed purification.
 function purificationBanner(total) {
+  banner(`⟡ Zone Purified ×${total} — the cycle deepens`);
+}
+function achievementBanner(name) {
+  banner(`🏆 Achievement — ${name}`);
+}
+// Shared transient banner. Stacks vertically when several fire close together.
+function banner(html) {
   const b = document.createElement('div');
   b.className = 'aa-banner aa-frame';
-  b.innerHTML = `⟡ Zone Purified ×${total} — the cycle deepens`;
+  b.innerHTML = html;
+  const live = document.querySelectorAll('.aa-banner').length;
+  b.style.top = `${64 + live * 48}px`;
   document.body.appendChild(b);
   setTimeout(() => b.classList.add('is-fading'), 2200);
   setTimeout(() => b.remove(), 3000);
@@ -127,8 +138,20 @@ const panels = {
     '<div class="aa-row"><span>Active Golems</span><em id="golem-count">0</em></div>')),
   research: new Panel('research', 'Research — Arcane Transmuter', buildResearchBody()),
   stats: new Panel('stats', 'Run Statistics', buildPanelBody('<div id="stats-list"></div>')),
+  achievements: new Panel('achievements', 'Achievements', buildPanelBody('<div id="ach-list"></div>')),
   network: new Panel('network', 'Network — P2P', buildNetworkBody()),
 };
+
+function refreshAchievements() {
+  const list = document.getElementById('ach-list');
+  if (!list) return;
+  const have = new Set(state.achievements || []);
+  list.innerHTML = ACHIEVEMENTS.map(a => {
+    const got = have.has(a.id);
+    return `<div class="aa-row aa-ach ${got ? 'is-got' : ''}" title="${a.desc}">` +
+      `<span>${got ? '🏆' : '🔒'} ${a.name}</span><em>${got ? 'Unlocked' : a.desc}</em></div>`;
+  }).join('');
+}
 
 function fmtPlaytime(ticks) {
   const m = Math.floor(ticks / 60), s = ticks % 60;
@@ -746,6 +769,8 @@ function simulationStep() {
       if (m) pulse(m.x, m.y, '#d35f5f');
     } else if (ev.type === 'purified') {
       Sound.win(); purificationBanner(ev.total);
+    } else if (ev.type === 'achievement') {
+      Sound.collect(); achievementBanner(ev.name);
     }
   }
   if (state.status !== lastStatus) {
