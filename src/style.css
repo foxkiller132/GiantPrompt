@@ -169,6 +169,10 @@ html, body {
 .aa-tech.is-done { opacity: 0.55; }
 .aa-tech.is-done em { color: #5fd3a8; }
 .aa-tech.is-locked { opacity: 0.5; }
+.aa-tech.is-active { background: rgba(111,168,255,0.14); box-shadow: inset 0 0 0 1px rgba(111,168,255,0.4); }
+.aa-tech.is-active em { color: #8fc0ff; }
+.aa-tech-bar { height: 4px; margin-top: 4px; border-radius: 3px; background: rgba(255,255,255,0.1); overflow: hidden; }
+.aa-tech-bar > div { height: 100%; background: #6fa8ff; transition: width 400ms ease; }
 
 /* ---- Network panel ---- */
 .aa-net-status { font-size: 13px; margin: 6px 0; }

@@ -123,53 +123,55 @@ export const MODULES = {
 // Alt-click cycles through these in order (null = remove).
 export const MODULE_CYCLE = [null, 'resonance', 'channeling', 'amplifier'];
 
-// Research tree. The Arcane Transmuter is the "research lab": spending the listed
-// resources unlocks high-tier machines. `requires` enforces progression order.
-// Aether Condenser and Elemental Refinery are available from the start.
+// Research tree (continuous / science-style). Each `cost` is the *total* of a
+// resource the active research consumes over time at RESEARCH_RATE per tick — so
+// advancing requires building and sustaining production, the main driver of long
+// Factorio-like pacing. `requires` enforces progression order. Aether Condenser
+// and Elemental Refinery are available from the start.
 export const TECH = {
   synthesis: {
     name: 'Arcane Synthesis', requires: [],
-    cost: { refined: 12, ingot: 6 }, unlocks: ['arcaneTransmuter'],
+    cost: { refined: 120, ingot: 60 }, unlocks: ['arcaneTransmuter'],
     desc: 'Advanced synthesis and blueprinting.',
   },
   glyphcraft: {
     name: 'Glyphcraft', requires: ['synthesis'],
-    cost: { component: 8, ingot: 10 }, unlocks: ['glyphCarver'],
+    cost: { component: 90, ingot: 120 }, unlocks: ['glyphCarver'],
     desc: 'Carve functional Glyphs for upgrades and keying.',
   },
   animation: {
     name: 'Golem Animation', requires: ['glyphcraft'],
-    cost: { component: 10, glyph: 4 }, unlocks: ['golemsmithHub'],
+    cost: { component: 140, glyph: 50 }, unlocks: ['golemsmithHub'],
     desc: 'Forge and program Worker Golems.',
   },
   logistics: {
     name: 'Arcane Logistics', requires: ['synthesis'],
-    cost: { glyph: 3, manaStream: 30 }, unlocks: ['automatedConduit'],
+    cost: { glyph: 40, manaStream: 400 }, unlocks: ['automatedConduit'],
     desc: 'Continuous bulk transport via conduits.',
-  },
-  portals: {
-    name: 'Portal Theory', requires: ['logistics', 'glyphcraft'],
-    cost: { glyph: 8, component: 12 }, unlocks: ['portalGenerator'],
-    desc: 'Instantaneous transfer between linked points.',
   },
   wards: {
     name: 'Ward Matrices', requires: ['synthesis'],
-    cost: { ingot: 8, manaStream: 25 }, unlocks: ['wardTower'],
+    cost: { ingot: 110, manaStream: 350 }, unlocks: ['wardTower'],
     desc: 'Mana-powered defensive towers.',
   },
   capacitance: {
     name: 'Mana Capacitance', requires: ['synthesis'],
-    cost: { refined: 10, ingot: 8 }, unlocks: ['manaCapacitor'],
+    cost: { refined: 130, ingot: 100 }, unlocks: ['manaCapacitor'],
     desc: 'Buffer surplus mana as crystals to smooth demand.',
+  },
+  portals: {
+    name: 'Portal Theory', requires: ['logistics', 'glyphcraft'],
+    cost: { glyph: 120, component: 180 }, unlocks: ['portalGenerator'],
+    desc: 'Instantaneous transfer between linked points.',
   },
   runecraft: {
     name: 'Runecraft', requires: ['glyphcraft'],
-    cost: { ingot: 10, glyph: 5 }, unlocks: ['runeForge'],
+    cost: { ingot: 150, glyph: 90 }, unlocks: ['runeForge'],
     desc: 'Inscribe Processed Runes for high-tier builds.',
   },
   aegis: {
     name: 'Aegis Protocols', requires: ['runecraft', 'wards'],
-    cost: { rune: 8, component: 10 }, unlocks: ['aegisSpire'],
+    cost: { rune: 100, component: 160 }, unlocks: ['aegisSpire'],
     desc: 'Rune-fuelled heavy defensive spires.',
   },
 };

@@ -34,6 +34,7 @@ export function createState() {
     },
     peers: {},      // { host:{x,y}, guest:{x,y} } — live cursor presence
     researched: [], // unlocked tech ids
+    researching: null, // active continuous research { id, spent }
     purifier: 0,    // progress toward the next Zone Purification milestone
     runName: '',    // player-given label for this run (shown in the slot list)
     difficulty: 1,  // threat multiplier chosen at New Game (Calm/Standard/Relentless)
@@ -124,20 +125,62 @@ export function isUnlocked(state, type) {
   return tech ? state.researched.includes(tech[0]) : true;
 }
 
-// Can a tech be researched now (prereqs met, affordable, not already done)?
+// Continuous (science-style) research. A tech's `cost` is the *total* of each
+// resource it consumes; while it is the active research, the factory feeds those
+// resources over time. You must build and sustain production to advance — this is
+// the main source of long, Factorio-like pacing.
+
+// Resource units drawn per tick per ingredient while researching.
+const RESEARCH_RATE = 1;
+
+// Can a tech be *started* (prereqs met, not done, not already the active research).
 export function canResearch(state, techId) {
   const t = TECH[techId];
   if (!t || state.researched.includes(techId)) return false;
-  if (!t.requires.every(r => state.researched.includes(r))) return false;
-  return Object.entries(t.cost).every(([res, n]) => (state.resources[res] || 0) >= n);
+  if (state.researching && state.researching.id === techId) return false;
+  return t.requires.every(r => state.researched.includes(r));
 }
 
-// Spend the cost and unlock a tech. Returns true on success.
+// Begin researching a tech (replaces any current research-in-progress).
 export function research(state, techId) {
   if (!canResearch(state, techId)) return false;
-  for (const [res, n] of Object.entries(TECH[techId].cost)) state.resources[res] -= n;
-  state.researched.push(techId);
+  state.researching = { id: techId, spent: {} };
   return true;
+}
+
+// Advance the active research by consuming available inputs. Returns the tech id
+// when it completes this tick, else null.
+function tickResearch(state) {
+  const r = state.researching;
+  if (!r) return null;
+  const t = TECH[r.id];
+  if (!t) { state.researching = null; return null; }
+  let done = true;
+  for (const [res, total] of Object.entries(t.cost)) {
+    const spent = r.spent[res] || 0;
+    if (spent < total) {
+      const take = Math.min(RESEARCH_RATE, total - spent, state.resources[res] || 0);
+      if (take > 0) { state.resources[res] -= take; r.spent[res] = spent + take; }
+      if ((r.spent[res] || 0) < total) done = false;
+    }
+  }
+  if (done) {
+    const id = r.id;
+    state.researched.push(id);
+    state.researching = null;
+    return id;
+  }
+  return null;
+}
+
+// UI helper: { id, frac } progress of the active research, or null.
+export function researchProgress(state) {
+  const r = state.researching;
+  if (!r) return null;
+  const t = TECH[r.id];
+  let spent = 0, total = 0;
+  for (const [res, n] of Object.entries(t.cost)) { total += n; spent += Math.min(n, r.spent[res] || 0); }
+  return { id: r.id, frac: total ? spent / total : 1 };
 }
 
 export function place(state, type, x, y) {
@@ -158,6 +201,9 @@ export function applyTick(state) {
 
   const worldEvt = tickWorldEvent(state);
   if (worldEvt) events.push(worldEvt);
+
+  const doneTech = tickResearch(state);
+  if (doneTech) events.push({ type: 'researched', id: doneTech });
 
   const outMult = outputMultiplier(state) * wonderOutputMult(state) * eventOutputMult(state);
 

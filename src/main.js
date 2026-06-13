@@ -2,7 +2,7 @@
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
 import { RESOURCES, MACHINES, threatTierFor, THREAT_TIERS, MODULES } from './data/gamedata.js';
-import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine, cycleModule } from './core/state.js';
+import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine, cycleModule, researchProgress } from './core/state.js';
 import { TECH } from './data/gamedata.js';
 import { ACHIEVEMENTS } from './core/achievements.js';
 import { PERKS, perkLevel, spendPerk, canSpendPerk } from './core/perks.js';
@@ -297,14 +297,20 @@ function buildResearchBody() {
 function refreshResearch() {
   const list = document.getElementById('tech-list');
   if (!list) return;
+  const prog = researchProgress(state);
   list.innerHTML = Object.entries(TECH).map(([id, t]) => {
     const done = state.researched.includes(id);
-    const ok = !done && canResearch(state, id);
-    const cost = Object.entries(t.cost).map(([r, n]) => `${n} ${r}`).join(', ');
-    const cls = done ? 'is-done' : ok ? 'is-ready' : 'is-locked';
-    const label = done ? 'Researched ✓' : `Research (${cost})`;
-    return `<div class="aa-row aa-tech ${cls}" data-tech="${id}" role="button" tabindex="0">` +
-      `<span>${t.name}</span><em>${label}</em></div>`;
+    const active = prog && prog.id === id;
+    const ok = !done && !active && canResearch(state, id);
+    const cost = Object.entries(t.cost).map(([r, n]) => `${n} ${RESOURCES[r]?.icon || r}`).join(' ');
+    const cls = done ? 'is-done' : active ? 'is-active' : ok ? 'is-ready' : 'is-locked';
+    let label;
+    if (done) label = 'Researched ✓';
+    else if (active) label = `Researching… ${Math.floor(prog.frac * 100)}%`;
+    else label = `Research: ${cost}`;
+    const bar = active ? `<div class="aa-tech-bar"><div style="width:${prog.frac * 100}%"></div></div>` : '';
+    return `<div class="aa-row aa-tech ${cls}" data-tech="${id}" role="button" tabindex="0" title="${t.desc}">` +
+      `<span>${t.name}${bar}</span><em>${label}</em></div>`;
   }).join('');
   list.querySelectorAll('.aa-tech.is-ready').forEach(row => {
     row.addEventListener('click', () => {
@@ -1016,6 +1022,8 @@ function simulationStep() {
       Sound.collect(); achievementBanner(ev.name);
     } else if (ev.type === 'event') {
       Sound.portal(); banner(`✦ ${ev.name}${ev.instant ? ' — windfall!' : ''}`);
+    } else if (ev.type === 'researched') {
+      Sound.win(); banner(`🔬 Research complete — ${TECH[ev.id]?.name || ev.id}`);
     }
   }
   if (state.status !== lastStatus) {
