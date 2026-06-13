@@ -185,6 +185,15 @@ document.querySelectorAll('#dock .aa-dock-btn[data-panel]').forEach(btn => {
   btn.addEventListener('click', () => panels[btn.dataset.panel].toggle());
 });
 
+// Intro overlay (first visit, or via a fresh browser). Dismissal is remembered.
+const introVeil = document.getElementById('intro-veil');
+if (localStorage.getItem('aa:onboarded') !== '1') introVeil.hidden = false;
+document.getElementById('intro-begin').addEventListener('click', () => {
+  introVeil.hidden = true;
+  localStorage.setItem('aa:onboarded', '1');
+  Sound.portal();
+});
+
 // Sound mute toggle.
 const muteBtn = document.getElementById('dock-mute');
 function refreshMute() { muteBtn.textContent = isMuted() ? '🔇' : '🔊'; }
