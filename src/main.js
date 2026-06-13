@@ -17,6 +17,7 @@ const ctx = canvas.getContext('2d');
 place(state, 'elementalRefinery', 4, 4);
 place(state, 'aetherCondenser', 6, 4);
 place(state, 'arcaneTransmuter', 5, 6);
+place(state, 'golemsmithHub', 7, 6);
 
 function resize() {
   canvas.width = window.innerWidth;
@@ -44,6 +45,9 @@ function renderHud(tier) {
   threatFill.style.background = tier.color;
   threatTier.textContent = `${tier.label} · ${Math.floor(state.residue)}`;
   threatTier.style.color = tier.color;
+
+  const golemCount = document.getElementById('golem-count');
+  if (golemCount) golemCount.textContent = String(state.golems.length);
 }
 
 // ---- Panels (draggable, position-persisting) -------------------------------
@@ -62,7 +66,9 @@ const panels = {
       `<div class="aa-row aa-build" data-build="${key}" role="button" tabindex="0">` +
       `<span>${m.glyph} ${m.name}</span><em>${m.purpose}</em></div>`).join(''))),
   golems: new Panel('golems', 'Golem Console', buildPanelBody(
-    '<p class="aa-note">Glyph-programmed routing arrives next iteration.</p>')),
+    '<p class="aa-note">Worker Golems are forged by the Golemsmith Hub and ' +
+    'patrol routes between the nearest processing machines.</p>' +
+    '<div class="aa-row"><span>Active Golems</span><em id="golem-count">0</em></div>')),
   network: new Panel('network', 'Network — P2P', buildPanelBody(
     '<p class="aa-note">Host acts as Designated Authority Client. ' +
     'WebRTC peer mesh planned; the authoritative tick already runs host-side.</p>')),
@@ -114,6 +120,18 @@ function renderWorld() {
     ctx.font = '26px serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(def.glyph, px + (TILE - 6) / 2, py + (TILE - 6) / 2);
+  }
+
+  // Golems — small glowing motes patrolling their routes.
+  for (const g of state.golems) {
+    const px = g.x * TILE, py = g.y * TILE;
+    ctx.save();
+    ctx.shadowBlur = 10; ctx.shadowColor = '#9fffd0';
+    ctx.fillStyle = '#cfffe6';
+    ctx.beginPath();
+    ctx.arc(px, py, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   build.drawGhost(ctx);

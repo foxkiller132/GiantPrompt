@@ -8,6 +8,7 @@
 // (and desync/cheat detection) tractable later.
 
 import { MACHINES, threatTierFor } from '../data/gamedata.js';
+import { tickGolems } from './golems.js';
 
 export function createState() {
   return {
@@ -57,6 +58,8 @@ export function applyTick(state) {
     residueDelta += def.residue;
     events.push({ type: 'machine-active', id: m.id, machine: m.type });
   }
+
+  tickGolems(state);
 
   state.residue += residueDelta;
   return { events, residueDelta, tier: threatTierFor(state.residue) };
