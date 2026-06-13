@@ -6,9 +6,9 @@ import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapsho
 import { TECH } from './data/gamedata.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
-import { Sound, pulse, drawPulses, isMuted, setMuted } from './ui/feedback.js';
+import { Sound, pulse, drawPulses, isMuted, setMuted, getVolume, setVolume } from './ui/feedback.js';
 import { Net } from './net/p2p.js';
-import { saveGame, loadGame, hasSave } from './core/save.js';
+import { saveGame, loadGame, hasSave, clearSave } from './core/save.js';
 
 const TICK_MS = 1000;
 const TILE = 64;
@@ -17,19 +17,23 @@ const state = createState();
 const canvas = document.getElementById('world');
 const ctx = canvas.getContext('2d');
 
-// Seed a small starter factory. Synthesis is pre-researched so the Transmuter is
-// buildable from the start; the rest of the tech tree is the player's to unlock.
-state.researched.push('synthesis');
-place(state, 'elementalRefinery', 4, 4);
-place(state, 'aetherCondenser', 6, 4);
-place(state, 'arcaneTransmuter', 5, 6);
-
-// Natural raw-element nodes feed the refinery; a mana node feeds the condenser.
-seedNodes(state, [
-  { element: 'fire', x: 1, y: 2 }, { element: 'water', x: 10, y: 2 },
-  { element: 'earth', x: 2, y: 9 }, { element: 'air', x: 9, y: 9 },
-  { element: 'manaCrystal', x: 8, y: 2, rate: 0.5 },
-]);
+// Reset the live state to a fresh starter factory. Synthesis is pre-researched so
+// the Transmuter is buildable from the start; the rest of the tech tree is the
+// player's to unlock. Called when starting a New Game from the main menu.
+function newWorld() {
+  restore(state, snapshot(createState()));
+  state.researched.push('synthesis');
+  place(state, 'elementalRefinery', 4, 4);
+  place(state, 'aetherCondenser', 6, 4);
+  place(state, 'arcaneTransmuter', 5, 6);
+  // Natural raw-element nodes feed the refinery; a mana node feeds the condenser.
+  seedNodes(state, [
+    { element: 'fire', x: 1, y: 2 }, { element: 'water', x: 10, y: 2 },
+    { element: 'earth', x: 2, y: 9 }, { element: 'air', x: 9, y: 9 },
+    { element: 'manaCrystal', x: 8, y: 2, rate: 0.5 },
+  ]);
+  lastStatus = 'playing';
+}
 
 function resize() {
   canvas.width = window.innerWidth;
@@ -67,17 +71,36 @@ function renderHud(tier) {
   refreshBlueprintLocks();
   refreshResearch();
 
-  if (state.status !== 'playing' && !document.getElementById('aa-end')) {
-    const won = state.status === 'won';
+  if (state.status === 'lost' && !document.getElementById('aa-end')) {
+    setSpeed(0);
     const overlay = document.createElement('div');
     overlay.id = 'aa-end';
     overlay.className = 'aa-frame';
     overlay.innerHTML =
-      `<h1>${won ? '⟡ Zone Purified' : '☠ Factory Overrun'}</h1>` +
-      `<p>${won ? 'You sustained production and neutralized the arcane threat.'
-                : 'The Arcane Residue summoned more than your defenses could hold.'}</p>`;
+      `<h1>☠ Factory Overrun</h1>` +
+      `<p>The Arcane Residue summoned more than your defenses could hold.</p>` +
+      `<div class="aa-end-actions">` +
+      `<button id="end-load" class="aa-dock-btn"${hasSave() ? '' : ' disabled'}>Load Last Save</button>` +
+      `<button id="end-menu" class="aa-dock-btn">Main Menu</button></div>`;
     document.body.appendChild(overlay);
+    const loadBtn = document.getElementById('end-load');
+    if (loadBtn) loadBtn.addEventListener('click', () => {
+      if (loadGame(state)) { state.status = 'playing'; overlay.remove(); setSpeed(1); }
+    });
+    document.getElementById('end-menu').addEventListener('click', () => {
+      overlay.remove(); openMainMenu();
+    });
   }
+}
+
+// Transient celebratory banner for a completed purification.
+function purificationBanner(total) {
+  const b = document.createElement('div');
+  b.className = 'aa-banner aa-frame';
+  b.innerHTML = `⟡ Zone Purified ×${total} — the cycle deepens`;
+  document.body.appendChild(b);
+  setTimeout(() => b.classList.add('is-fading'), 2200);
+  setTimeout(() => b.remove(), 3000);
 }
 
 // ---- Panels (draggable, position-persisting) -------------------------------
@@ -185,14 +208,78 @@ document.querySelectorAll('#dock .aa-dock-btn[data-panel]').forEach(btn => {
   btn.addEventListener('click', () => panels[btn.dataset.panel].toggle());
 });
 
-// Intro overlay (first visit, or via a fresh browser). Dismissal is remembered.
-const introVeil = document.getElementById('intro-veil');
-if (localStorage.getItem('aa:onboarded') !== '1') introVeil.hidden = false;
-document.getElementById('intro-begin').addEventListener('click', () => {
-  introVeil.hidden = true;
-  localStorage.setItem('aa:onboarded', '1');
-  Sound.portal();
+// ---- Main menu & settings --------------------------------------------------
+const menuVeil = document.getElementById('menu-veil');
+const menuPages = {
+  main: document.getElementById('menu-main'),
+  howto: document.getElementById('menu-howto'),
+  settings: document.getElementById('menu-settings'),
+};
+function showMenuPage(name) {
+  Object.entries(menuPages).forEach(([k, el]) => { el.hidden = k !== name; });
+}
+function openMainMenu() {
+  setSpeed(0);
+  document.getElementById('menu-continue').disabled = !hasSave();
+  showMenuPage('main');
+  menuVeil.hidden = false;
+}
+function startGame() { menuVeil.hidden = true; Sound.portal(); setSpeed(defaultSpeed); }
+
+document.getElementById('menu-new').addEventListener('click', () => { newWorld(); startGame(); });
+document.getElementById('menu-continue').addEventListener('click', () => {
+  if (loadGame(state)) { state.status = 'playing'; startGame(); }
 });
+document.getElementById('menu-howto-btn').addEventListener('click', () => showMenuPage('howto'));
+document.getElementById('menu-settings-btn').addEventListener('click', () => { renderSettings(); showMenuPage('settings'); });
+document.querySelectorAll('.aa-menu-back').forEach(b => b.addEventListener('click', () => showMenuPage('main')));
+
+// Settings live here so they're reachable from the menu and persist to localStorage.
+let autosaveEvery = Number(localStorage.getItem('aa:autosave') ?? '20');
+let defaultSpeed = Number(localStorage.getItem('aa:defaultSpeed') ?? '1');
+function renderSettings() {
+  const el = menuPages.settings;
+  el.innerHTML = `
+    <h2 class="aa-settings-h">Settings</h2>
+    <label class="aa-set-row">Master volume
+      <input id="set-vol" type="range" min="0" max="1" step="0.05" value="${getVolume()}"></label>
+    <label class="aa-set-row">Mute all sound
+      <input id="set-mute" type="checkbox" ${isMuted() ? 'checked' : ''}></label>
+    <label class="aa-set-row">Autosave interval
+      <select id="set-autosave">
+        <option value="0">Off</option>
+        <option value="10">Frequent (10t)</option>
+        <option value="20">Normal (20t)</option>
+        <option value="40">Sparse (40t)</option>
+      </select></label>
+    <label class="aa-set-row">Default game speed
+      <select id="set-speed">
+        <option value="1">1×</option><option value="2">2×</option><option value="3">3×</option>
+      </select></label>
+    <div class="aa-set-divider"></div>
+    <button id="set-clearsave" class="aa-menu-btn aa-set-danger">Delete Save</button>
+    <button class="aa-menu-btn aa-menu-back">Back</button>`;
+  el.querySelector('#set-autosave').value = String(autosaveEvery);
+  el.querySelector('#set-speed').value = String(defaultSpeed);
+
+  el.querySelector('#set-vol').addEventListener('input', (e) => { setVolume(Number(e.target.value)); });
+  el.querySelector('#set-vol').addEventListener('change', () => Sound.collect());
+  el.querySelector('#set-mute').addEventListener('change', (e) => { setMuted(e.target.checked); refreshMute(); });
+  el.querySelector('#set-autosave').addEventListener('change', (e) => {
+    autosaveEvery = Number(e.target.value); localStorage.setItem('aa:autosave', e.target.value);
+  });
+  el.querySelector('#set-speed').addEventListener('change', (e) => {
+    defaultSpeed = Number(e.target.value); localStorage.setItem('aa:defaultSpeed', e.target.value);
+  });
+  el.querySelector('#set-clearsave').addEventListener('click', (e) => {
+    clearSave(); document.getElementById('menu-continue').disabled = true;
+    e.target.textContent = 'Save Deleted'; e.target.disabled = true;
+  });
+  el.querySelectorAll('.aa-menu-back').forEach(b => b.addEventListener('click', () => showMenuPage('main')));
+}
+
+// Boot into the main menu rather than straight into play.
+openMainMenu();
 
 // Sound mute toggle.
 const muteBtn = document.getElementById('dock-mute');
@@ -568,7 +655,7 @@ function simulationStep() {
   const result = applyTick(state);
   tier = result.tier;
   if (net.role === 'host') net.broadcast(snapshot(state));
-  if (state.tick % 20 === 0) saveGame(state); // autosave (host/solo only)
+  if (autosaveEvery > 0 && state.tick % autosaveEvery === 0) saveGame(state);
 
   // Attach feedback to real state changes reported by the authoritative tick.
   for (const ev of result.events) {
@@ -576,11 +663,12 @@ function simulationStep() {
     else if (ev.type === 'machine-destroyed') {
       const m = state.machines.find(x => x.id === ev.machine);
       if (m) pulse(m.x, m.y, '#d35f5f');
+    } else if (ev.type === 'purified') {
+      Sound.win(); purificationBanner(ev.total);
     }
   }
   if (state.status !== lastStatus) {
-    if (state.status === 'won') Sound.win();
-    else if (state.status === 'lost') Sound.lose();
+    if (state.status === 'lost') Sound.lose();
     lastStatus = state.status;
   }
 
@@ -614,6 +702,7 @@ function frame() {
   renderWorld();
   requestAnimationFrame(frame);
 }
-simulationStep();
-setSpeed(1);
+// The world stays paused behind the main menu (openMainMenu set speed 0);
+// New Game / Continue start the tick loop. Only the render loop runs now.
+renderHud(threatTierFor(state.residue));
 frame();

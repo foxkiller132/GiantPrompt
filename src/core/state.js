@@ -24,8 +24,9 @@ export function createState() {
     },
     peers: {},      // { host:{x,y}, guest:{x,y} } — live cursor presence
     researched: [], // unlocked tech ids
-    purifier: 0,    // Zone Purification progress toward the victory condition
-    status: 'playing', // 'playing' | 'won' | 'lost'
+    purifier: 0,    // progress toward the next Zone Purification milestone
+    purifications: 0, // completed purifications (escalating endgame, never terminal)
+    status: 'playing', // 'playing' | 'lost' (defeat is recoverable from a save)
     machines: [],   // { id, type, x, y, active, health }
     golems: [],     // { id, kind, x, y, route, leg }
     enemies: [],    // { id, name, hp, power, loot, x, y }
@@ -161,11 +162,19 @@ export function applyTick(state) {
   // automated, defended factory long enough purifies the zone and wins the run.
   if (state.status === 'playing' && state.resources.glyph >= 1) {
     state.resources.glyph -= 1;
-    state.purifier = Math.min(PURIFIER_GOAL, state.purifier + 1);
+    state.purifier += 1;
     // Purification actively scrubs pollution, easing the threat curve — but only
     // while you can spare the Glyphs the rest of the factory also wants.
     state.residue = Math.max(0, state.residue - CLEANSE_PER_GLYPH);
-    if (state.purifier >= PURIFIER_GOAL) state.status = 'won';
+    // Milestone: completing a purification is a major reward, not an end. Play
+    // continues; each purification scrubs a large chunk of residue and is logged
+    // so the run can escalate indefinitely.
+    if (state.purifier >= PURIFIER_GOAL) {
+      state.purifier = 0;
+      state.purifications += 1;
+      state.residue = Math.max(0, state.residue - PURIFIER_GOAL * 4);
+      events.push({ type: 'purified', total: state.purifications });
+    }
   }
   // Defeat: the factory is wiped out.
   if (state.status === 'playing' && state.machines.length === 0 && state.tick > 5) {

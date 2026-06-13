@@ -7,11 +7,19 @@
 
 let actx = null;
 let muted = localStorage.getItem('aa:muted') === '1';
+let volume = clamp01(parseFloat(localStorage.getItem('aa:volume') ?? '0.8'));
+
+function clamp01(v) { return Math.max(0, Math.min(1, isNaN(v) ? 0.8 : v)); }
 
 export function isMuted() { return muted; }
 export function setMuted(on) {
   muted = on;
   localStorage.setItem('aa:muted', on ? '1' : '0');
+}
+export function getVolume() { return volume; }
+export function setVolume(v) {
+  volume = clamp01(v);
+  localStorage.setItem('aa:volume', String(volume));
 }
 
 function audio() {
@@ -32,8 +40,9 @@ function chime(freq, { dur = 0.18, type = 'sine', gain = 0.12 } = {}) {
   const env = ac.createGain();
   osc.type = type;
   osc.frequency.value = freq;
+  const peak = Math.max(0.0001, gain * volume);
   env.gain.setValueAtTime(0.0001, ac.currentTime);
-  env.gain.exponentialRampToValueAtTime(gain, ac.currentTime + 0.01);
+  env.gain.exponentialRampToValueAtTime(peak, ac.currentTime + 0.01);
   env.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
   osc.connect(env).connect(ac.destination);
   osc.start();
