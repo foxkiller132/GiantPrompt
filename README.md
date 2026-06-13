@@ -29,21 +29,26 @@ python3 -m http.server 8000
 - **Single source of truth** — `src/data/gamedata.js` encodes the spec's exact
   machines, recipes, and the residue→threat curve.
 
-## Implemented so far (iteration 1)
+## Implemented
 
 - Core resource/machine model (Aether Condenser, Elemental Refinery, Arcane
   Transmuter, Glyph Carver, Golemsmith Hub, Automated Conduit, Portal Generator).
 - Deterministic per-tick simulation with input gating and residue accumulation.
 - Threat meter driven directly by total Arcane Residue (Calm → Goblins →
   Wraiths → Dragons).
-- Draggable, position-persisting HUD panels.
+- Draggable, position-persisting (sticky-anchor) HUD panels.
 - Canvas world render with glowing active machines.
+- **Build/placement** interaction: select a blueprint → ghost preview → place.
+- **Golem units** forged by the Golemsmith Hub that patrol routes and defend.
+- **Enemy spawning & combat** scaled to residue; machines take damage / fall.
+- **Victory & defeat**: channel surplus Glyphs into the Zone Purifier to win;
+  lose if the factory is wiped out. Animated end-of-run overlay.
+- **Raw-element node extraction** for a self-sustaining economy.
+- **Audio + visual feedback** (WebAudio chimes + canvas pulse rings).
+- **Automated Conduit flow bonus** boosting adjacent machine throughput.
 
-## Roadmap
+## Roadmap (remaining)
 
-1. Build/placement interaction on the canvas grid; resource node extraction.
-2. Golem unit system with Glyph-programmed routing & pathfinding.
-3. Conduit/portal transport networks.
-4. Enemy spawning & combat tied to the threat tiers; victory condition.
-5. WebRTC P2P mesh with the DAC host loop and snapshot reconciliation.
-6. Audio + richer interaction feedback.
+1. WebRTC P2P mesh with the DAC host loop and snapshot reconciliation.
+2. Portal Generator paired teleport for golems/bulk goods.
+3. Machine upgrades and deeper tech progression.
