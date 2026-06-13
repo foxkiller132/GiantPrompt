@@ -524,11 +524,34 @@ function simulationStep() {
 
   renderHud(tier);
 }
-setInterval(simulationStep, TICK_MS);
+// Variable-speed scheduler: 0 = paused, 1×/2×/3× tick rate. A self-rescheduling
+// timeout (instead of a fixed setInterval) lets speed change take effect at once.
+let gameSpeed = 1;
+let tickTimer = null;
+function scheduleTick() {
+  clearTimeout(tickTimer);
+  if (gameSpeed <= 0) return;
+  tickTimer = setTimeout(() => { simulationStep(); scheduleTick(); }, TICK_MS / gameSpeed);
+}
+function setSpeed(s) {
+  gameSpeed = s;
+  document.querySelectorAll('#dock .aa-speed').forEach(b =>
+    b.classList.toggle('is-active', Number(b.dataset.speed) === s));
+  scheduleTick();
+}
+document.querySelectorAll('#dock .aa-speed').forEach(btn =>
+  btn.addEventListener('click', () => setSpeed(Number(btn.dataset.speed))));
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && e.target === document.body) {
+    e.preventDefault();
+    setSpeed(gameSpeed > 0 ? 0 : 1);
+  }
+});
 
 function frame() {
   renderWorld();
   requestAnimationFrame(frame);
 }
 simulationStep();
+setSpeed(1);
 frame();

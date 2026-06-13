@@ -71,6 +71,11 @@ html, body {
   width: 1px; align-self: stretch; margin: 2px 4px;
   background: var(--aa-brass-dim); opacity: 0.5;
 }
+.aa-speed { min-width: 34px; text-align: center; }
+.aa-speed.is-active {
+  border-color: var(--aa-brass); color: var(--aa-brass);
+  box-shadow: 0 0 12px rgba(201,164,90,0.45);
+}
 
 /* ---- Panels ---- */
 .aa-panel {
