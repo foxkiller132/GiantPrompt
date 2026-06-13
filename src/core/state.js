@@ -49,6 +49,13 @@ function tickNodes(state) {
   }
 }
 
+// Remove a machine (demolish). Returns true if one was removed.
+export function removeMachine(state, machineId) {
+  const before = state.machines.length;
+  state.machines = state.machines.filter(m => m.id !== machineId);
+  return state.machines.length < before;
+}
+
 // Upgrade a machine one level. Cost scales with level and is paid in Glyphs (the
 // spec's machine-upgrade currency). Returns true if the upgrade was applied.
 export function upgradeCost(level) { return level * 3; }

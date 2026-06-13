@@ -2,7 +2,7 @@
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
 import { RESOURCES, MACHINES, threatTierFor } from './data/gamedata.js';
-import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch } from './core/state.js';
+import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine } from './core/state.js';
 import { TECH } from './data/gamedata.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
@@ -185,6 +185,12 @@ document.querySelectorAll('#dock .aa-dock-btn[data-panel]').forEach(btn => {
   btn.addEventListener('click', () => panels[btn.dataset.panel].toggle());
 });
 
+// Demolish toggle (dock button + 'X' key).
+document.getElementById('dock-demolish').addEventListener('click', () => setDemolish(!demolishMode));
+window.addEventListener('keydown', (e) => {
+  if ((e.key === 'x' || e.key === 'X') && e.target === document.body) setDemolish(!demolishMode);
+});
+
 // ---- Save / load -----------------------------------------------------------
 document.getElementById('dock-save').addEventListener('click', () => {
   if (saveGame(state)) { Sound.collect(); flashDock('dock-save', 'Saved ✓'); }
@@ -215,6 +221,8 @@ net.onIntent = (kind, args) => {
     research(state, args.tech);
   } else if (kind === 'cursor') {
     state.peers.guest = { x: args.x, y: args.y };
+  } else if (kind === 'demolish') {
+    removeMachine(state, args.id);
   }
 };
 
@@ -270,6 +278,16 @@ canvas.addEventListener('pointermove', (e) => {
   else state.peers.host = pos; // host carries its own cursor in the snapshot
 });
 
+// Demolish mode: click a machine to remove it instead of upgrading.
+let demolishMode = false;
+function setDemolish(on) {
+  demolishMode = on;
+  if (on) build.cancel();
+  canvas.style.cursor = on ? 'not-allowed' : 'default';
+  const btn = document.getElementById('dock-demolish');
+  if (btn) btn.classList.toggle('is-active', on);
+}
+
 // Click a placed machine (when not building) to upgrade it with Glyphs.
 canvas.addEventListener('click', (e) => {
   if (build.isActive()) return;
@@ -278,6 +296,13 @@ canvas.addEventListener('click', (e) => {
   const gy = Math.floor((e.clientY - r.top) / TILE);
   const m = state.machines.find(x => x.x === gx && x.y === gy);
   if (!m) return;
+
+  if (demolishMode) {
+    if (net.role === 'guest' && net.connected) { net.sendIntent('demolish', { id: m.id }); return; }
+    if (removeMachine(state, m.id)) { Sound.slain(); pulse(m.x, m.y, '#d35f5f'); renderHud(tier); }
+    return;
+  }
+
   if (net.role === 'guest' && net.connected) { net.sendIntent('upgrade', { id: m.id }); return; }
   if (upgrade(state, m.id)) { Sound.activate(); pulse(m.x, m.y, '#c9a45a'); renderHud(tier); }
   else { Sound.slain(); } // not enough Glyphs — soft denial cue
@@ -287,6 +312,7 @@ canvas.addEventListener('click', (e) => {
 document.querySelectorAll('.aa-build').forEach(row => {
   const pick = () => {
     if (!isUnlocked(state, row.dataset.build)) { Sound.slain(); return; } // locked
+    setDemolish(false);
     build.select(row.dataset.build);
   };
   row.addEventListener('click', pick);

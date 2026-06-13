@@ -72,10 +72,11 @@ html, body {
   background: var(--aa-brass-dim); opacity: 0.5;
 }
 .aa-speed { min-width: 34px; text-align: center; }
-.aa-speed.is-active {
+.aa-speed.is-active, #dock-demolish.is-active {
   border-color: var(--aa-brass); color: var(--aa-brass);
   box-shadow: 0 0 12px rgba(201,164,90,0.45);
 }
+#dock-demolish.is-active { border-color: #d35f5f; color: #ffb3b3; box-shadow: 0 0 12px rgba(211,95,95,0.5); }
 
 /* ---- Panels ---- */
 .aa-panel {
