@@ -9,7 +9,8 @@
 import { MACHINES } from '../data/gamedata.js';
 
 const FORGE_EVERY = 6;      // ticks between golem production
-const GOLEM_SPEED = 0.15;   // tiles per tick
+const GOLEM_SPEED = 0.15;   // tiles per tick (workers)
+const COMBAT_SPEED = 0.22;  // combat golems are faster hunters
 const MAX_GOLEMS = 12;
 
 export function tickGolems(state) {
@@ -21,16 +22,33 @@ export function tickGolems(state) {
       .every(([r, rate]) => (state.resources[r] || 0) >= rate);
     if (ready && affordable && state.golems.length < MAX_GOLEMS) {
       for (const [r, rate] of Object.entries(def.inputs)) state.resources[r] -= rate;
-      state.golems.push({
-        id: state.nextId++, kind: 'worker',
-        x: hub.x + 0.5, y: hub.y + 0.5,
-        route: assignRoute(state, hub), leg: 0,
-      });
+      // Forge a Combat Golem when enemies threaten and few are deployed; otherwise
+      // a Worker that patrols the production route.
+      const combatCount = state.golems.filter(g => g.kind === 'combat').length;
+      const wantCombat = (state.enemies?.length || 0) > 0 && combatCount < 4;
+      state.golems.push(wantCombat
+        ? { id: state.nextId++, kind: 'combat', x: hub.x + 0.5, y: hub.y + 0.5 }
+        : { id: state.nextId++, kind: 'worker', x: hub.x + 0.5, y: hub.y + 0.5,
+            route: assignRoute(state, hub), leg: 0 });
     }
   }
 
-  // --- Movement: advance each golem toward its current waypoint ------------
+  // --- Movement -----------------------------------------------------------
   for (const g of state.golems) {
+    if (g.kind === 'combat') {
+      // Hunt the nearest enemy; idle near the hub if none remain.
+      let target = null, bestD = Infinity;
+      for (const e of state.enemies || []) {
+        const d = Math.hypot(e.x - g.x, e.y - g.y);
+        if (d < bestD) { bestD = d; target = e; }
+      }
+      if (!target) continue;
+      const dx = target.x - g.x, dy = target.y - g.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      if (dist > 0.4) { g.x += (dx / dist) * COMBAT_SPEED; g.y += (dy / dist) * COMBAT_SPEED; }
+      continue;
+    }
+    // Workers patrol their assigned route.
     if (!g.route || g.route.length < 2) continue;
     const target = g.route[g.leg];
     const dx = target.x - g.x, dy = target.y - g.y;

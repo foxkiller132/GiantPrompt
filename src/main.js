@@ -428,15 +428,17 @@ function renderWorld() {
     ctx.restore();
   }
 
-  // Golems — small glowing motes patrolling their routes.
+  // Golems — workers glow teal; combat golems are larger and amber-edged.
   for (const g of state.golems) {
     const px = g.x * TILE, py = g.y * TILE;
+    const combat = g.kind === 'combat';
     ctx.save();
-    ctx.shadowBlur = 10; ctx.shadowColor = '#9fffd0';
-    ctx.fillStyle = '#cfffe6';
+    ctx.shadowBlur = 10; ctx.shadowColor = combat ? '#ffd89a' : '#9fffd0';
+    ctx.fillStyle = combat ? '#ffe6b0' : '#cfffe6';
     ctx.beginPath();
-    ctx.arc(px, py, 6, 0, Math.PI * 2);
+    ctx.arc(px, py, combat ? 7 : 6, 0, Math.PI * 2);
     ctx.fill();
+    if (combat) { ctx.strokeStyle = '#c9a45a'; ctx.lineWidth = 2; ctx.stroke(); }
     ctx.restore();
   }
 

@@ -37,14 +37,15 @@ export function tickEnemies(state, rng = Math.random) {
 
   // --- Defense: golems within range strike the nearest enemy --------------
   const events = [];
-  const GOLEM_RANGE = 1.2, GOLEM_DMG = 2;
   for (const g of state.golems || []) {
-    let best = null, bestD = GOLEM_RANGE;
+    const range = g.kind === 'combat' ? 1.6 : 1.2;
+    const dmg = g.kind === 'combat' ? 5 : 2; // combat golems hit harder
+    let best = null, bestD = range;
     for (const e of state.enemies) {
       const d = Math.hypot(e.x - g.x, e.y - g.y);
       if (d < bestD) { bestD = d; best = e; }
     }
-    if (best) best.hp -= GOLEM_DMG;
+    if (best) best.hp -= dmg;
   }
   // --- Active defense: powered Ward Towers blast the nearest enemy in range --
   for (const tower of state.machines.filter(m => m.type === 'wardTower' && m.active !== false)) {
