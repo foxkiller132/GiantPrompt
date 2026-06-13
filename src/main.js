@@ -38,12 +38,14 @@ function newWorld() {
   // Natural raw-element nodes feed the refinery; a mana node feeds the condenser.
   // A resource field with room to scale: two nodes per element plus mana sources,
   // each with throughput headroom for several refineries/condensers as you expand.
+  // Kept within ~12x10 tiles so the whole field stays on-screen (there is no
+  // camera/scroll — the playfield is the visible window).
   seedNodes(state, [
-    { element: 'fire',  x: 1,  y: 2,  rate: 3 }, { element: 'fire',  x: 2,  y: 13, rate: 3 },
-    { element: 'water', x: 13, y: 2,  rate: 3 }, { element: 'water', x: 12, y: 12, rate: 3 },
-    { element: 'earth', x: 2,  y: 9,  rate: 3 }, { element: 'earth', x: 15, y: 5,  rate: 3 },
-    { element: 'air',   x: 9,  y: 14, rate: 3 }, { element: 'air',   x: 14, y: 14, rate: 3 },
-    { element: 'manaCrystal', x: 7, y: 2, rate: 2 }, { element: 'manaCrystal', x: 6, y: 13, rate: 2 },
+    { element: 'fire',  x: 1,  y: 2, rate: 3 }, { element: 'fire',  x: 2,  y: 9, rate: 3 },
+    { element: 'water', x: 11, y: 2, rate: 3 }, { element: 'water', x: 10, y: 9, rate: 3 },
+    { element: 'earth', x: 1,  y: 6, rate: 3 }, { element: 'earth', x: 5,  y: 9, rate: 3 },
+    { element: 'air',   x: 11, y: 6, rate: 3 }, { element: 'air',   x: 8,  y: 9, rate: 3 },
+    { element: 'manaCrystal', x: 6, y: 2, rate: 2 }, { element: 'manaCrystal', x: 6, y: 8, rate: 2 },
   ]);
   lastStatus = 'playing';
 }
