@@ -192,6 +192,13 @@ html, body {
   border-radius: 5px; padding: 4px 8px;
 }
 .aa-set-divider { height: 1px; background: var(--aa-brass-dim); opacity: 0.4; margin: 12px 0; }
+.aa-set-subhead { color: var(--aa-brass); font-size: 13px; opacity: 0.85; margin-bottom: 2px; }
+.aa-key-btn {
+  font: inherit; font-size: 13px; color: var(--aa-ink); cursor: pointer; min-width: 90px;
+  background: rgba(0,0,0,0.3); border: 1px solid var(--aa-brass-dim);
+  border-radius: 5px; padding: 4px 10px; transition: all 160ms;
+}
+.aa-key-btn:hover { border-color: var(--aa-brass); box-shadow: 0 0 10px rgba(201,164,90,0.35); }
 
 /* ---- Save slots ---- */
 .aa-slot { display: flex; gap: 8px; align-items: stretch; }

@@ -338,6 +338,32 @@ document.getElementById('menu-howto-btn').addEventListener('click', () => showMe
 document.getElementById('menu-settings-btn').addEventListener('click', () => { renderSettings(); showMenuPage('settings'); });
 document.querySelectorAll('.aa-menu-back').forEach(b => b.addEventListener('click', () => showMenuPage('main')));
 
+// ---- Keybindings -----------------------------------------------------------
+const DEFAULT_KEYS = { pause: 'Space', demolish: 'KeyX' };
+let keybinds = { ...DEFAULT_KEYS, ...(() => {
+  try { return JSON.parse(localStorage.getItem('aa:keys') || '{}'); } catch { return {}; }
+})() };
+let capturingAction = null; // action id while waiting to bind the next keypress
+
+function keyLabel(code) {
+  if (!code) return '—';
+  return code.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Arrow/, '');
+}
+
+window.addEventListener('keydown', (e) => {
+  // Rebinding capture takes precedence over everything.
+  if (capturingAction) {
+    e.preventDefault();
+    if (e.code !== 'Escape') { keybinds[capturingAction] = e.code; localStorage.setItem('aa:keys', JSON.stringify(keybinds)); }
+    capturingAction = null;
+    renderSettings();
+    return;
+  }
+  if (!menuVeil.hidden || e.target !== document.body) return; // not while a menu/field is focused
+  if (e.code === keybinds.pause) { e.preventDefault(); setSpeed(gameSpeed > 0 ? 0 : 1); }
+  else if (e.code === keybinds.demolish) { setDemolish(!demolishMode); }
+});
+
 // Settings live here so they're reachable from the menu and persist to localStorage.
 let autosaveEvery = Number(localStorage.getItem('aa:autosave') ?? '20');
 let defaultSpeed = Number(localStorage.getItem('aa:defaultSpeed') ?? '1');
@@ -361,6 +387,12 @@ function renderSettings() {
         <option value="1">1×</option><option value="2">2×</option><option value="3">3×</option>
       </select></label>
     <div class="aa-set-divider"></div>
+    <div class="aa-set-subhead">Keybindings</div>
+    <div class="aa-set-row">Pause / resume
+      <button class="aa-key-btn" data-bind="pause">${capturingAction === 'pause' ? 'Press a key…' : keyLabel(keybinds.pause)}</button></div>
+    <div class="aa-set-row">Demolish mode
+      <button class="aa-key-btn" data-bind="demolish">${capturingAction === 'demolish' ? 'Press a key…' : keyLabel(keybinds.demolish)}</button></div>
+    <div class="aa-set-divider"></div>
     <button id="set-clearsave" class="aa-menu-btn aa-set-danger">Delete Save</button>
     <button class="aa-menu-btn aa-menu-back">Back</button>`;
   el.querySelector('#set-autosave').value = String(autosaveEvery);
@@ -375,6 +407,9 @@ function renderSettings() {
   el.querySelector('#set-speed').addEventListener('change', (e) => {
     defaultSpeed = Number(e.target.value); localStorage.setItem('aa:defaultSpeed', e.target.value);
   });
+  el.querySelectorAll('.aa-key-btn').forEach(btn => btn.addEventListener('click', () => {
+    capturingAction = btn.dataset.bind; renderSettings();
+  }));
   el.querySelector('#set-clearsave').addEventListener('click', (e) => {
     clearSave(); document.getElementById('menu-continue').disabled = true;
     e.target.textContent = 'Save Deleted'; e.target.disabled = true;
@@ -391,11 +426,8 @@ function refreshMute() { muteBtn.textContent = isMuted() ? '🔇' : '🔊'; }
 muteBtn.addEventListener('click', () => { setMuted(!isMuted()); refreshMute(); });
 refreshMute();
 
-// Demolish toggle (dock button + 'X' key).
+// Demolish toggle (dock button + keybind).
 document.getElementById('dock-demolish').addEventListener('click', () => setDemolish(!demolishMode));
-window.addEventListener('keydown', (e) => {
-  if ((e.key === 'x' || e.key === 'X') && e.target === document.body) setDemolish(!demolishMode);
-});
 
 // ---- Save / load -----------------------------------------------------------
 document.getElementById('dock-save').addEventListener('click', () => {
@@ -797,12 +829,6 @@ function setSpeed(s) {
 }
 document.querySelectorAll('#dock .aa-speed').forEach(btn =>
   btn.addEventListener('click', () => setSpeed(Number(btn.dataset.speed))));
-window.addEventListener('keydown', (e) => {
-  if (e.code === 'Space' && e.target === document.body) {
-    e.preventDefault();
-    setSpeed(gameSpeed > 0 ? 0 : 1);
-  }
-});
 
 function frame() {
   renderWorld();
