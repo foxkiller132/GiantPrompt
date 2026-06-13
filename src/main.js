@@ -228,6 +228,35 @@ function commitPlace(type, gx, gy) {
 }
 const build = new BuildController(state, canvas, TILE, commitPlace);
 
+// Machine inspector: hover a placed machine to see its recipe, level, and status.
+const inspector = document.getElementById('inspector');
+function fmtRates(rates) {
+  const entries = Object.entries(rates);
+  if (!entries.length) return '—';
+  return entries.map(([r, n]) => `${(RESOURCES[r]?.icon) || ''} ${n} ${RESOURCES[r]?.name || r}`).join('<br>');
+}
+canvas.addEventListener('pointermove', (e) => {
+  if (build.isActive()) { inspector.hidden = true; return; }
+  const r = canvas.getBoundingClientRect();
+  const gx = Math.floor((e.clientX - r.left) / TILE);
+  const gy = Math.floor((e.clientY - r.top) / TILE);
+  const m = state.machines.find(x => x.x === gx && x.y === gy);
+  if (!m) { inspector.hidden = true; return; }
+  const def = MACHINES[m.type];
+  const lvl = m.level || 1;
+  inspector.innerHTML =
+    `<div class="aa-insp-title">${def.glyph} ${def.name} <em>L${lvl}</em></div>` +
+    `<div class="aa-insp-purpose">${def.purpose}</div>` +
+    `<div class="aa-insp-grid"><div><b>In</b><br>${fmtRates(def.inputs)}</div>` +
+    `<div><b>Out</b><br>${fmtRates(def.outputs)}</div></div>` +
+    `<div class="aa-insp-foot">${m.active === false ? '⏸ starved' : '⚡ active'} · ` +
+    `residue ${def.residue}/tick · upgrade: ${upgradeCost(lvl)} ${RESOURCES.glyph.icon}</div>`;
+  inspector.hidden = false;
+  inspector.style.left = `${Math.min(e.clientX + 16, window.innerWidth - 250)}px`;
+  inspector.style.top = `${Math.min(e.clientY + 16, window.innerHeight - 160)}px`;
+});
+canvas.addEventListener('pointerleave', () => { inspector.hidden = true; });
+
 // Presence: broadcast our cursor (tile-space) to the peer, throttled.
 let lastCursorSent = 0;
 canvas.addEventListener('pointermove', (e) => {
