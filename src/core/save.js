@@ -22,7 +22,8 @@ export function setActiveSlot(slot) { localStorage.setItem(ACTIVE_KEY, String(sl
 export function saveToSlot(state, slot) {
   try {
     const meta = { tick: state.tick, purifications: state.purifications || 0,
-                   machines: state.machines.length, residue: Math.floor(state.residue) };
+                   machines: state.machines.length, residue: Math.floor(state.residue),
+                   slain: state.stats?.enemiesSlain || 0 };
     localStorage.setItem(keyFor(slot),
       JSON.stringify({ v: VERSION, ts: Date.now(), meta, state: snapshot(state) }));
     return true;

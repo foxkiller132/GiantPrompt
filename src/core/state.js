@@ -26,6 +26,7 @@ export function createState() {
     researched: [], // unlocked tech ids
     purifier: 0,    // progress toward the next Zone Purification milestone
     purifications: 0, // completed purifications (escalating endgame, never terminal)
+    stats: { enemiesSlain: 0, machinesBuilt: 0, peakResidue: 0 }, // run statistics
     status: 'playing', // 'playing' | 'lost' (defeat is recoverable from a save)
     machines: [],   // { id, type, x, y, active, health }
     golems: [],     // { id, kind, x, y, route, leg }
@@ -114,6 +115,7 @@ export function place(state, type, x, y) {
   if (!isUnlocked(state, type)) throw new Error(`Machine not yet researched: ${type}`);
   const machine = { id: state.nextId++, type, x, y, active: true };
   state.machines.push(machine);
+  if (state.stats) state.stats.machinesBuilt++;
   return machine;
 }
 
@@ -157,6 +159,14 @@ export function applyTick(state) {
   events.push(...enemyResult.events);
 
   state.residue += residueDelta;
+
+  // Run statistics.
+  if (state.stats) {
+    for (const ev of enemyResult.events) {
+      if (ev.type === 'enemy-slain') state.stats.enemiesSlain += ev.count;
+    }
+    if (state.residue > state.stats.peakResidue) state.stats.peakResidue = Math.floor(state.residue);
+  }
 
   // Victory: channel surplus Glyphs into the Zone Purifier. Sustaining a fully
   // automated, defended factory long enough purifies the zone and wins the run.

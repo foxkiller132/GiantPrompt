@@ -71,6 +71,7 @@ function renderHud(tier) {
 
   refreshBlueprintLocks();
   refreshResearch();
+  refreshStats();
 
   if (state.status === 'lost' && !document.getElementById('aa-end')) {
     setSpeed(0);
@@ -124,8 +125,30 @@ const panels = {
     'patrol routes between the nearest processing machines.</p>' +
     '<div class="aa-row"><span>Active Golems</span><em id="golem-count">0</em></div>')),
   research: new Panel('research', 'Research — Arcane Transmuter', buildResearchBody()),
+  stats: new Panel('stats', 'Run Statistics', buildPanelBody('<div id="stats-list"></div>')),
   network: new Panel('network', 'Network — P2P', buildNetworkBody()),
 };
+
+function fmtPlaytime(ticks) {
+  const m = Math.floor(ticks / 60), s = ticks % 60;
+  return `${m}m ${String(s).padStart(2, '0')}s`;
+}
+function refreshStats() {
+  const list = document.getElementById('stats-list');
+  if (!list || !state.stats) return;
+  const rows = [
+    ['Playtime', fmtPlaytime(state.tick)],
+    ['Purifications', state.purifications],
+    ['Enemies slain', state.stats.enemiesSlain],
+    ['Machines built', state.stats.machinesBuilt],
+    ['Machines standing', state.machines.length],
+    ['Golems active', state.golems.length],
+    ['Current residue', Math.floor(state.residue)],
+    ['Peak residue', state.stats.peakResidue],
+  ];
+  list.innerHTML = rows.map(([k, v]) =>
+    `<div class="aa-row"><span>${k}</span><em>${v}</em></div>`).join('');
+}
 
 function buildResearchBody() {
   const el = document.createElement('div');
@@ -232,7 +255,8 @@ function startGame() { menuVeil.hidden = true; Sound.portal(); setSpeed(defaultS
 function fmtSlot(meta) {
   if (!meta) return 'Empty';
   const when = new Date(meta.ts).toLocaleString();
-  return `${meta.purifications}× purified · ${meta.machines} machines · tick ${meta.tick} — ${when}`;
+  const slain = meta.slain != null ? ` · ${meta.slain} slain` : '';
+  return `${meta.purifications}× purified · ${meta.machines} machines${slain} · tick ${meta.tick} — ${when}`;
 }
 
 // Slot picker, reused for starting (mode 'new') and resuming (mode 'load').
