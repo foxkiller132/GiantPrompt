@@ -7,6 +7,7 @@ import { TECH } from './data/gamedata.js';
 import { ACHIEVEMENTS } from './core/achievements.js';
 import { PERKS, perkLevel, spendPerk, canSpendPerk } from './core/perks.js';
 import { WONDERS, hasWonder, canBuildWonder, buildWonder } from './core/wonders.js';
+import { eventActive } from './core/events.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses, isMuted, setMuted, getVolume, setVolume } from './ui/feedback.js';
@@ -95,6 +96,13 @@ function renderHud(tier) {
     const starved = state.machines.filter(m => m.active === false).length;
     sw.hidden = starved === 0;
     sw.textContent = `⚠ ${starved} starved`;
+  }
+
+  const ei = document.getElementById('event-ind');
+  if (ei) {
+    const ev = eventActive(state);
+    ei.hidden = !ev;
+    if (ev) ei.textContent = `✦ ${ev.name} (${Math.max(0, state.event.until - state.tick)}t)`;
   }
 
   const golemCount = document.getElementById('golem-count');
@@ -996,6 +1004,8 @@ function simulationStep() {
       Sound.win(); purificationBanner(ev.total); recordPurification(ev.total);
     } else if (ev.type === 'achievement') {
       Sound.collect(); achievementBanner(ev.name);
+    } else if (ev.type === 'event') {
+      Sound.portal(); banner(`✦ ${ev.name}${ev.instant ? ' — windfall!' : ''}`);
     }
   }
   if (state.status !== lastStatus) {

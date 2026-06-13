@@ -9,6 +9,7 @@
 import { threatTierFor, MACHINES } from '../data/gamedata.js';
 import { defenseMultiplier } from './perks.js';
 import { wonderDefenseMult } from './wonders.js';
+import { eventSpawnMult } from './events.js';
 
 const ENEMY_SPEED = 0.08;
 const CONTACT = 0.4;        // tiles
@@ -46,7 +47,7 @@ export function tickEnemies(state, rng = Math.random) {
   // --- Spawning: chance rises with residue, ascension, and difficulty -----
   const diff = state.difficulty || 1;
   if (roster.length && state.enemies.length < MAX_ENEMIES) {
-    const spawnChance = Math.min(0.95, (state.residue / 4000) * asc * diff);
+    const spawnChance = Math.min(0.95, (state.residue / 4000) * asc * diff * eventSpawnMult(state));
     if (rng() < spawnChance) {
       const proto = scale(roster[Math.floor(rng() * roster.length)]);
       const edge = spawnEdge(state, rng);

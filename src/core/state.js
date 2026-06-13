@@ -22,6 +22,7 @@ import { tickEnemies } from './enemies.js';
 import { checkAchievements } from './achievements.js';
 import { outputMultiplier, residueMultiplier } from './perks.js';
 import { wonderOutputMult, wonderResidueMult, wonderPurifyRate } from './wonders.js';
+import { tickWorldEvent, eventOutputMult, eventResidueMult } from './events.js';
 
 export function createState() {
   return {
@@ -154,7 +155,11 @@ export function applyTick(state) {
   state.tick++;
   const events = [];
   let residueDelta = 0;
-  const outMult = outputMultiplier(state) * wonderOutputMult(state);
+
+  const worldEvt = tickWorldEvent(state);
+  if (worldEvt) events.push(worldEvt);
+
+  const outMult = outputMultiplier(state) * wonderOutputMult(state) * eventOutputMult(state);
 
   tickNodes(state);
 
@@ -196,7 +201,7 @@ export function applyTick(state) {
   const enemyResult = tickEnemies(state);
   events.push(...enemyResult.events);
 
-  state.residue += residueDelta * residueMultiplier(state) * wonderResidueMult(state);
+  state.residue += residueDelta * residueMultiplier(state) * wonderResidueMult(state) * eventResidueMult(state);
 
   // Run statistics.
   if (state.stats) {
