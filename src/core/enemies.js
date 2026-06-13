@@ -114,7 +114,9 @@ export function tickEnemies(state, rng = Math.random) {
 
   // --- Movement + sabotage on contact -------------------------------------
   for (const e of state.enemies) {
-    const target = nearestMachine(state, e);
+    // Bosses make for the economy core (Condenser/Transmuter) per the spec's
+    // "targeting core production nodes"; lesser foes hit the nearest machine.
+    const target = (e.isBoss && nearestCore(state, e)) || nearestMachine(state, e);
     if (!target) continue;
     const dx = (target.x + 0.5) - e.x, dy = (target.y + 0.5) - e.y;
     const dist = Math.hypot(dx, dy);
@@ -156,6 +158,17 @@ function spawnEdge(state, rng) {
   if (side === 1) return { x: span, y: rng() * span };
   if (side === 2) return { x: rng() * span, y: span };
   return { x: -1, y: rng() * span };
+}
+
+const CORE_TYPES = new Set(['aetherCondenser', 'arcaneTransmuter']);
+function nearestCore(state, e) {
+  let best = null, bestD = Infinity;
+  for (const m of state.machines) {
+    if (!CORE_TYPES.has(m.type)) continue;
+    const d = Math.hypot(m.x - e.x, m.y - e.y);
+    if (d < bestD) { bestD = d; best = m; }
+  }
+  return best;
 }
 
 function nearestMachine(state, e) {
