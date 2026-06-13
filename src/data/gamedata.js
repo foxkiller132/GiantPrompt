@@ -42,10 +42,10 @@ export const MACHINES = {
   arcaneTransmuter: {
     name: 'Arcane Transmuter', glyph: '✸', category: 'processing',
     purpose: 'Advanced Synthesis / Blueprinting',
-    inputs:  { refined: 2, component: 1, manaStream: 2 },
-    outputs: { component: 2, glyph: 0.25 },
+    inputs:  { refined: 2, manaStream: 2 },
+    outputs: { component: 1, glyph: 0.25 },
     residue: 3,
-    notes: 'The research lab; unlocks high-tier recipes.',
+    notes: 'Synthesizes Components and Glyphs from refined elements and mana.',
   },
   glyphCarver: {
     name: 'Glyph Carver', glyph: '𖧷', category: 'processing',
