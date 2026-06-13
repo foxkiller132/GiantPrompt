@@ -578,6 +578,9 @@ net.onIntent = (kind, args) => {
     state.peers.guest = { x: args.x, y: args.y };
   } else if (kind === 'demolish') {
     removeMachine(state, args.id);
+  } else if (kind === 'overclock') {
+    const m = state.machines.find(x => x.id === args.id);
+    if (m) m.overclock = !m.overclock;
   }
 };
 
@@ -612,8 +615,10 @@ canvas.addEventListener('pointermove', (e) => {
     `<div class="aa-insp-purpose">${def.purpose}</div>` +
     `<div class="aa-insp-grid"><div><b>In</b><br>${fmtRates(def.inputs)}</div>` +
     `<div><b>Out</b><br>${fmtRates(def.outputs)}</div></div>` +
-    `<div class="aa-insp-foot">${m.active === false ? '⏸ starved' : '⚡ active'} · ` +
-    `residue ${def.residue}/tick · upgrade: ${upgradeCost(lvl)} ${RESOURCES.glyph.icon}</div>`;
+    `<div class="aa-insp-foot">${m.active === false ? '⏸ idle' : '⚡ active'}` +
+    `${m.overclock ? ' · ⚡<b>2× overclocked</b>' : ''} · ` +
+    `residue ${def.residue}/tick · upgrade: ${upgradeCost(lvl)} ${RESOURCES.glyph.icon}` +
+    `<br><span class="aa-insp-hint">click: upgrade · shift-click: overclock</span></div>`;
   inspector.hidden = false;
   inspector.style.left = `${Math.min(e.clientX + 16, window.innerWidth - 250)}px`;
   inspector.style.top = `${Math.min(e.clientY + 16, window.innerHeight - 160)}px`;
@@ -655,6 +660,13 @@ canvas.addEventListener('click', (e) => {
   if (demolishMode) {
     if (net.role === 'guest' && net.connected) { net.sendIntent('demolish', { id: m.id }); return; }
     if (removeMachine(state, m.id)) { Sound.slain(); pulse(m.x, m.y, '#d35f5f'); renderHud(tier); }
+    return;
+  }
+
+  // Shift-click toggles overclock (burst output at extra input + residue cost).
+  if (e.shiftKey) {
+    if (net.role === 'guest' && net.connected) { net.sendIntent('overclock', { id: m.id }); return; }
+    m.overclock = !m.overclock; Sound.activate(); pulse(m.x, m.y, '#ff9a5f'); renderHud(tier);
     return;
   }
 
@@ -760,6 +772,12 @@ function renderWorld() {
       ctx.font = 'bold 12px sans-serif';
       ctx.textAlign = 'right'; ctx.textBaseline = 'top';
       ctx.fillText(`L${m.level}`, px + TILE - 10, py + 4);
+    }
+    if (m.overclock) {
+      ctx.fillStyle = '#ff9a5f';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText('⚡', px + 6, py + 4);
     }
   }
 

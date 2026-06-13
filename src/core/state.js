@@ -145,9 +145,12 @@ export function applyTick(state) {
   for (const m of state.machines) {
     const def = MACHINES[m.type];
 
-    // A machine runs only if not suppressed and every input is available.
+    // Overclock doubles throughput (and input draw + residue) for burst output.
+    const oc = m.overclock ? 2 : 1;
+
+    // A machine runs only if not suppressed and every (overclocked) input is available.
     const canRun = !m.suppressed && Object.entries(def.inputs).every(
-      ([res, rate]) => (state.resources[res] || 0) >= rate
+      ([res, rate]) => (state.resources[res] || 0) >= rate * oc
     );
 
     m.active = canRun;
@@ -156,15 +159,15 @@ export function applyTick(state) {
     // Flow bonus: each powered Automated Conduit adjacent to this machine boosts
     // its output throughput (+15% each, capped) — the conduit's spec role of
     // keeping high-throughput machines continuously fed.
-    const flow = (1 + Math.min(0.6, 0.15 * adjacentConduits(state, m))) * levelBonus(m) * outMult;
+    const flow = (1 + Math.min(0.6, 0.15 * adjacentConduits(state, m))) * levelBonus(m) * outMult * oc;
 
     for (const [res, rate] of Object.entries(def.inputs)) {
-      state.resources[res] -= rate;
+      state.resources[res] -= rate * oc;
     }
     for (const [res, rate] of Object.entries(def.outputs)) {
       state.resources[res] = (state.resources[res] || 0) + rate * flow;
     }
-    residueDelta += def.residue * levelBonus(m);
+    residueDelta += def.residue * levelBonus(m) * oc;
     events.push({ type: 'machine-active', id: m.id, machine: m.type });
   }
 

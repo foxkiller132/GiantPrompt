@@ -152,6 +152,7 @@ html, body {
 .aa-insp-grid { display: flex; gap: 14px; }
 .aa-insp-grid b { color: var(--aa-brass-dim); font-size: 11px; }
 .aa-insp-foot { margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 11px; opacity: 0.85; }
+.aa-insp-hint { opacity: 0.55; font-style: italic; }
 
 /* ---- Lock / research state ---- */
 .aa-build.is-locked { opacity: 0.4; cursor: not-allowed; }
