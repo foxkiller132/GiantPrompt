@@ -118,7 +118,12 @@ function renderHud(tier) {
   }
 
   const golemCount = document.getElementById('golem-count');
-  if (golemCount) golemCount.textContent = String(state.golems.length);
+  if (golemCount) {
+    golemCount.textContent = String(state.golems.length);
+    const by = (k) => state.golems.filter(g => g.kind === k).length;
+    const setTxt = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = String(n); };
+    setTxt('golem-w', by('worker')); setTxt('golem-c', by('combat')); setTxt('golem-m', by('mining'));
+  }
 
   refreshInventory();
   refreshGoals();
@@ -184,9 +189,14 @@ const panels = {
       `<div class="aa-row aa-build" data-build="${key}" role="button" tabindex="0">` +
       `<span>${m.glyph} ${m.name}</span><em>${m.purpose}</em></div>`).join(''))),
   golems: new Panel('golems', 'Golem Console', buildPanelBody(
-    '<p class="aa-note">Worker Golems are forged by the Golemsmith Hub and ' +
-    'patrol routes between the nearest processing machines.</p>' +
-    '<div class="aa-row"><span>Active Golems</span><em id="golem-count">0</em></div>')),
+    '<p class="aa-note">The Golemsmith Hub forges golems based on need:<br>' +
+    '• <b>Workers</b> patrol machines, granting +output while servicing.<br>' +
+    '• <b>Combat</b> golems hunt enemies when threatened.<br>' +
+    '• <b>Mining</b> golems boost extraction at resource nodes.</p>' +
+    '<div class="aa-row"><span>Active Golems</span><em id="golem-count">0</em></div>' +
+    '<div class="aa-row"><span>· Workers</span><em id="golem-w">0</em></div>' +
+    '<div class="aa-row"><span>· Combat</span><em id="golem-c">0</em></div>' +
+    '<div class="aa-row"><span>· Mining</span><em id="golem-m">0</em></div>')),
   research: new Panel('research', 'Research — Arcane Transmuter', buildResearchBody()),
   stats: new Panel('stats', 'Run Statistics', buildPanelBody('<div id="stats-list"></div>')),
   achievements: new Panel('achievements', 'Achievements', buildPanelBody('<div id="ach-list"></div>')),
