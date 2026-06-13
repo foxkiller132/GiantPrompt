@@ -60,7 +60,8 @@ function renderHud(tier) {
   const pct = Math.min(100, (state.residue / 1000) * 100);
   threatFill.style.width = `${pct}%`;
   threatFill.style.background = tier.color;
-  threatTier.textContent = `${tier.label} · ${Math.floor(state.residue)}`;
+  const asc = (state.purifications || 0) > 0 ? ` · ⟡${state.purifications}` : '';
+  threatTier.textContent = `${tier.label} · ${Math.floor(state.residue)}${asc}`;
   threatTier.style.color = tier.color;
 
   const purFill = document.getElementById('purifier-fill');

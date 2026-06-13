@@ -26,11 +26,19 @@ export function tickEnemies(state, rng = Math.random) {
   const roster = ROSTER[tier.id];
   state.enemies ||= [];
 
-  // --- Spawning: chance rises with residue, gated by tier roster ----------
+  // Ascension scaling: each completed Purification permanently ramps the threat,
+  // so the endless run keeps getting harder even though purifying dumps residue.
+  // hp/power scale up; spawn cadence tightens.
+  const asc = 1 + (state.purifications || 0) * 0.3;
+  const scale = (proto) => ({
+    ...proto, hp: Math.round(proto.hp * asc), power: Math.round(proto.power * asc),
+  });
+
+  // --- Spawning: chance rises with residue and ascension ------------------
   if (roster.length && state.enemies.length < MAX_ENEMIES) {
-    const spawnChance = Math.min(0.6, state.residue / 4000);
+    const spawnChance = Math.min(0.85, (state.residue / 4000) * asc);
     if (rng() < spawnChance) {
-      const proto = roster[Math.floor(rng() * roster.length)];
+      const proto = scale(roster[Math.floor(rng() * roster.length)]);
       const edge = spawnEdge(state, rng);
       state.enemies.push({ id: state.nextId++, ...proto, maxHp: proto.hp, x: edge.x, y: edge.y });
     }
@@ -39,9 +47,9 @@ export function tickEnemies(state, rng = Math.random) {
   // --- Boss waves: at the late tier, periodically unleash a single Elder boss --
   if (tier.id === 'late' && state.tick % BOSS_EVERY === 0 &&
       !state.enemies.some(e => e.isBoss)) {
-    const boss = rng() < 0.5
+    const boss = scale(rng() < 0.5
       ? { name: 'Elder Lich', hp: 140, power: 14, loot: 12 }
-      : { name: 'Ancient Dragon', hp: 180, power: 18, loot: 14 };
+      : { name: 'Ancient Dragon', hp: 180, power: 18, loot: 14 });
     const edge = spawnEdge(state, rng);
     state.enemies.push({ id: state.nextId++, ...boss, maxHp: boss.hp, isBoss: true, x: edge.x, y: edge.y });
   }
