@@ -21,6 +21,7 @@ import { tickGolems } from './golems.js';
 import { tickEnemies } from './enemies.js';
 import { checkAchievements } from './achievements.js';
 import { outputMultiplier, residueMultiplier } from './perks.js';
+import { wonderOutputMult, wonderResidueMult, wonderPurifyRate } from './wonders.js';
 
 export function createState() {
   return {
@@ -40,6 +41,7 @@ export function createState() {
     achievements: [], // unlocked achievement ids
     perkPoints: 0,    // unspent ascension perk points (1 per purification)
     perks: {},        // perk id -> level
+    wonders: [],      // built wonder ids (permanent run effects)
     status: 'playing', // 'playing' | 'lost' (defeat is recoverable from a save)
     machines: [],   // { id, type, x, y, active, health }
     golems: [],     // { id, kind, x, y, route, leg }
@@ -152,7 +154,7 @@ export function applyTick(state) {
   state.tick++;
   const events = [];
   let residueDelta = 0;
-  const outMult = outputMultiplier(state);
+  const outMult = outputMultiplier(state) * wonderOutputMult(state);
 
   tickNodes(state);
 
@@ -194,7 +196,7 @@ export function applyTick(state) {
   const enemyResult = tickEnemies(state);
   events.push(...enemyResult.events);
 
-  state.residue += residueDelta * residueMultiplier(state);
+  state.residue += residueDelta * residueMultiplier(state) * wonderResidueMult(state);
 
   // Run statistics.
   if (state.stats) {
@@ -208,7 +210,7 @@ export function applyTick(state) {
   // automated, defended factory long enough purifies the zone and wins the run.
   if (state.status === 'playing' && state.resources.glyph >= 1) {
     state.resources.glyph -= 1;
-    state.purifier += 1;
+    state.purifier += wonderPurifyRate(state);
     // Purification actively scrubs pollution, easing the threat curve — but only
     // while you can spare the Glyphs the rest of the factory also wants.
     state.residue = Math.max(0, state.residue - CLEANSE_PER_GLYPH);

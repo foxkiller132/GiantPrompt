@@ -6,6 +6,7 @@ import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapsho
 import { TECH } from './data/gamedata.js';
 import { ACHIEVEMENTS } from './core/achievements.js';
 import { PERKS, perkLevel, spendPerk, canSpendPerk } from './core/perks.js';
+import { WONDERS, hasWonder, canBuildWonder, buildWonder } from './core/wonders.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses, isMuted, setMuted, getVolume, setVolume } from './ui/feedback.js';
@@ -104,6 +105,7 @@ function renderHud(tier) {
   refreshStats();
   refreshAchievements();
   refreshPerks();
+  refreshWonders();
 
   if (state.status === 'lost' && !document.getElementById('aa-end')) {
     setSpeed(0);
@@ -172,8 +174,29 @@ const panels = {
   perks: new Panel('perks', 'Ascension Perks', buildPanelBody(
     '<p class="aa-note">Each Purification grants a perk point.</p>' +
     '<div class="aa-row"><span>Perk points</span><em id="perk-points">0</em></div><div id="perk-list"></div>')),
+  wonders: new Panel('wonders', 'Wonders', buildPanelBody(
+    '<p class="aa-note">Costly one-time mega-projects with permanent effects.</p><div id="wonder-list"></div>')),
   network: new Panel('network', 'Network — P2P', buildNetworkBody()),
 };
+
+function refreshWonders() {
+  const list = document.getElementById('wonder-list');
+  if (!list) return;
+  list.innerHTML = WONDERS.map(w => {
+    const built = hasWonder(state, w.id);
+    const ok = !built && canBuildWonder(state, w.id);
+    const cls = built ? 'is-maxed' : ok ? 'is-ready' : 'is-locked';
+    const cost = Object.entries(w.cost).map(([r, n]) => `${n} ${RESOURCES[r]?.icon || r}`).join(' ');
+    return `<div class="aa-row aa-perk ${cls}" data-wonder="${w.id}" role="button" tabindex="0" title="${w.desc}">` +
+      `<span>${w.name}<br><em class="aa-perk-lvl">${w.desc}</em></span>` +
+      `<em>${built ? 'Built ✓' : cost}</em></div>`;
+  }).join('');
+  list.querySelectorAll('.aa-perk.is-ready').forEach(row => row.addEventListener('click', () => {
+    const id = row.dataset.wonder;
+    if (net.role === 'guest' && net.connected) { net.sendIntent('wonder', { id }); return; }
+    if (buildWonder(state, id)) { Sound.win(); banner(`✦ Wonder raised — ${WONDERS.find(w => w.id === id).name}`); refreshWonders(); }
+  }));
+}
 
 function refreshPerks() {
   const pts = document.getElementById('perk-points');
@@ -583,6 +606,8 @@ net.onIntent = (kind, args) => {
     if (m) m.overclock = !m.overclock;
   } else if (kind === 'module') {
     cycleModule(state, args.id);
+  } else if (kind === 'wonder') {
+    buildWonder(state, args.id);
   }
 };
 
