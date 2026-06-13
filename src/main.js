@@ -76,10 +76,10 @@ function newWorld() {
     { element: 'fire',  x: 14, y: 9,  rate: 3 }, { element: 'water', x: 20, y: 9,  rate: 3 },
     { element: 'earth', x: 14, y: 13, rate: 3 }, { element: 'air',   x: 20, y: 13, rate: 3 },
     { element: 'manaCrystal', x: 17, y: 8, rate: 2 }, { element: 'manaCrystal', x: 17, y: 14, rate: 2 },
-    // Expansion patches (dormant until claimed; richer reward)
-    { element: 'fire',  x: 4,  y: 3,  rate: 4 }, { element: 'water', x: 33, y: 4,  rate: 4 },
-    { element: 'earth', x: 5,  y: 20, rate: 4 }, { element: 'air',   x: 32, y: 20, rate: 4 },
-    { element: 'manaCrystal', x: 34, y: 12, rate: 3 },
+    // Expansion patches (dormant until claimed; richer rate AND deeper reserves)
+    { element: 'fire',  x: 4,  y: 3,  rate: 4, reserve: 30000 }, { element: 'water', x: 33, y: 4,  rate: 4, reserve: 30000 },
+    { element: 'earth', x: 5,  y: 20, rate: 4, reserve: 30000 }, { element: 'air',   x: 32, y: 20, rate: 4, reserve: 30000 },
+    { element: 'manaCrystal', x: 34, y: 12, rate: 3, reserve: 30000 },
   ]);
   centerCamOn(17, 11);
   lastStatus = 'playing';

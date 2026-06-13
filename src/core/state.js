@@ -62,9 +62,10 @@ export function createState() {
 // Elemental Refinery fed without manual resupply.
 export function seedNodes(state, specs) {
   for (const n of specs) {
-    // Large reserves so a long single run isn't walled by depletion (there is no
-    // exploration to find new patches); `rate` is the real throughput limiter.
-    state.nodes.push({ id: state.nextId++, reserve: 200000, rate: 1, ...n });
+    // Finite reserves create the expansion pull: a patch lasts a long while (reserve
+    // / rate ticks) then runs dry, prompting you to claim fresh patches across the
+    // world. `rate` is the throughput limiter; `reserve` the longevity.
+    state.nodes.push({ id: state.nextId++, reserve: 15000, rate: 1, ...n });
   }
 }
 
@@ -78,10 +79,17 @@ export function nodeClaimed(state, n) {
     Math.hypot((m.x + 0.5) - (n.x + 0.5), (m.y + 0.5) - (n.y + 0.5)) <= CLAIM_RADIUS);
 }
 
+const NODE_BUFFER_TICKS = 30; // pool headroom a node maintains before idling
+
 function tickNodes(state) {
   for (const n of state.nodes) {
     if (n.reserve <= 0) continue;
     if (!nodeClaimed(state, n)) continue; // unclaimed patches lie dormant
+    // Demand-driven: only extract while the element's pool is below a small
+    // buffer, so reserve is spent on actual consumption rather than idle
+    // overflow. A bigger factory consumes faster and depletes patches sooner —
+    // which is what pulls you to claim fresh ones.
+    if ((state.resources[n.element] || 0) >= n.rate * NODE_BUFFER_TICKS) continue;
     const amount = Math.min(n.rate, n.reserve);
     state.resources[n.element] = (state.resources[n.element] || 0) + amount;
     n.reserve -= amount;
