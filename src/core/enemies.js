@@ -42,9 +42,10 @@ export function tickEnemies(state, rng = Math.random) {
     ...proto, hp: Math.round(proto.hp * asc), power: Math.round(proto.power * asc),
   });
 
-  // --- Spawning: chance rises with residue and ascension ------------------
+  // --- Spawning: chance rises with residue, ascension, and difficulty -----
+  const diff = state.difficulty || 1;
   if (roster.length && state.enemies.length < MAX_ENEMIES) {
-    const spawnChance = Math.min(0.85, (state.residue / 4000) * asc);
+    const spawnChance = Math.min(0.95, (state.residue / 4000) * asc * diff);
     if (rng() < spawnChance) {
       const proto = scale(roster[Math.floor(rng() * roster.length)]);
       const edge = spawnEdge(state, rng);

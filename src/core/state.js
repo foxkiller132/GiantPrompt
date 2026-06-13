@@ -34,6 +34,7 @@ export function createState() {
     researched: [], // unlocked tech ids
     purifier: 0,    // progress toward the next Zone Purification milestone
     runName: '',    // player-given label for this run (shown in the slot list)
+    difficulty: 1,  // threat multiplier chosen at New Game (Calm/Standard/Relentless)
     purifications: 0, // completed purifications (escalating endgame, never terminal)
     stats: { enemiesSlain: 0, machinesBuilt: 0, peakResidue: 0 }, // run statistics
     achievements: [], // unlocked achievement ids

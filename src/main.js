@@ -229,7 +229,9 @@ function fmtPlaytime(ticks) {
 function refreshStats() {
   const list = document.getElementById('stats-list');
   if (!list || !state.stats) return;
+  const diffName = state.difficulty <= 0.7 ? 'Calm' : state.difficulty >= 1.5 ? 'Relentless' : 'Standard';
   const rows = [
+    ['Difficulty', diffName],
     ['Playtime', fmtPlaytime(state.tick)],
     ['Purifications', state.purifications],
     ['Enemies slain', state.stats.enemiesSlain],
@@ -361,10 +363,18 @@ function fmtSlot(meta) {
 }
 
 // Slot picker, reused for starting (mode 'new') and resuming (mode 'load').
+const DIFFICULTIES = { calm: 0.65, standard: 1, relentless: 1.6 };
 function renderSlots(mode) {
   const el = menuPages.slots;
   const title = mode === 'new' ? 'Choose a slot for your new run' : 'Load a saved run';
-  el.innerHTML = `<h2 class="aa-settings-h">${title}</h2>` +
+  const diffPicker = mode === 'new' ? `
+    <label class="aa-set-row">Difficulty
+      <select id="new-diff">
+        <option value="calm">Calm — fewer threats</option>
+        <option value="standard" selected>Standard</option>
+        <option value="relentless">Relentless — heavy waves</option>
+      </select></label>` : '';
+  el.innerHTML = `<h2 class="aa-settings-h">${title}</h2>${diffPicker}` +
     listSlots().map(({ slot, meta }) => `
       <div class="aa-slot">
         <button class="aa-menu-btn aa-slot-main" data-slot="${slot}"
@@ -382,9 +392,11 @@ function renderSlots(mode) {
     if (mode === 'new') {
       if (meta && !confirm(`Slot ${slot + 1} has a run (${meta.purifications}× purified). Overwrite it?`)) return;
       const name = (prompt('Name this run:', `Run ${slot + 1}`) || '').trim();
+      const diffSel = el.querySelector('#new-diff');
       setActiveSlot(slot);
       newWorld();
       state.runName = name;
+      state.difficulty = DIFFICULTIES[diffSel ? diffSel.value : 'standard'] || 1;
       saveToSlot(state, slot);
       recordRunStarted();
       startGame();
