@@ -1,7 +1,7 @@
 // Arcane Automata — bootstrap & game loop.
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
-import { RESOURCES, MACHINES, threatTierFor } from './data/gamedata.js';
+import { RESOURCES, MACHINES, threatTierFor, THREAT_TIERS } from './data/gamedata.js';
 import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine } from './core/state.js';
 import { TECH } from './data/gamedata.js';
 import { ACHIEVEMENTS } from './core/achievements.js';
@@ -156,8 +156,25 @@ const panels = {
   research: new Panel('research', 'Research — Arcane Transmuter', buildResearchBody()),
   stats: new Panel('stats', 'Run Statistics', buildPanelBody('<div id="stats-list"></div>')),
   achievements: new Panel('achievements', 'Achievements', buildPanelBody('<div id="ach-list"></div>')),
+  codex: new Panel('codex', 'Codex', buildPanelBody(buildCodexHTML())),
   network: new Panel('network', 'Network — P2P', buildNetworkBody()),
 };
+
+// Static reference compiled from the canonical game data.
+function buildCodexHTML() {
+  const rate = (rates) => Object.entries(rates).map(([r, n]) =>
+    `${RESOURCES[r]?.icon || ''}${n}`).join(' ') || '—';
+  const machines = Object.values(MACHINES).map(m =>
+    `<div class="aa-codex-entry"><div class="aa-codex-name">${m.glyph} ${m.name}</div>` +
+    `<div class="aa-codex-sub">${m.purpose}</div>` +
+    `<div class="aa-codex-io">In: ${rate(m.inputs)} &nbsp;·&nbsp; Out: ${rate(m.outputs)} &nbsp;·&nbsp; Residue ${m.residue}/t</div>` +
+    `<div class="aa-codex-note">${m.notes || ''}</div></div>`).join('');
+  const threats = THREAT_TIERS.map(t =>
+    `<div class="aa-codex-entry"><div class="aa-codex-name" style="color:${t.color}">${t.label}</div>` +
+    `<div class="aa-codex-sub">Foes: ${t.enemies.join(', ')} · up to ${t.max === Infinity ? '∞' : t.max} residue</div></div>`).join('');
+  return `<div class="aa-codex-h">Machines</div>${machines}` +
+         `<div class="aa-codex-h">Threat Tiers</div>${threats}`;
+}
 
 function refreshAchievements() {
   const list = document.getElementById('ach-list');

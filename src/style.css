@@ -116,6 +116,14 @@ html, body {
 .aa-ach.is-got { opacity: 1; }
 .aa-ach.is-got em { color: #5fd3a8; }
 
+/* ---- Codex ---- */
+.aa-codex-h { color: var(--aa-brass); font-size: 14px; margin: 10px 0 6px; border-bottom: 1px solid var(--aa-brass-dim); padding-bottom: 3px; }
+.aa-codex-entry { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.aa-codex-name { font-size: 14px; }
+.aa-codex-sub { font-size: 12px; opacity: 0.75; margin: 2px 0; }
+.aa-codex-io { font-size: 11px; opacity: 0.85; }
+.aa-codex-note { font-size: 11px; opacity: 0.55; font-style: italic; margin-top: 2px; }
+
 /* ---- Machine inspector ---- */
 #inspector {
   position: fixed; z-index: 30; width: 230px; padding: 10px 12px;
