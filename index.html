@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcane Automata</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <canvas id="world"></canvas>
+
+  <header id="hud" class="aa-frame">
+    <div class="aa-brand">⟡ Arcane&nbsp;Automata</div>
+    <div id="resource-bar" class="aa-resource-bar"></div>
+    <div id="threat-meter" class="aa-threat" title="Threat scales with total Arcane Residue">
+      <span class="aa-threat-label">Residue</span>
+      <div class="aa-threat-track"><div id="threat-fill" class="aa-threat-fill"></div></div>
+      <span id="threat-tier" class="aa-threat-tier">Calm</span>
+    </div>
+  </header>
+
+  <nav id="dock" class="aa-frame">
+    <button class="aa-dock-btn" data-panel="inventory">Inventory</button>
+    <button class="aa-dock-btn" data-panel="blueprints">Blueprint Library</button>
+    <button class="aa-dock-btn" data-panel="golems">Golem Console</button>
+    <button class="aa-dock-btn" data-panel="network">Network</button>
+  </nav>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

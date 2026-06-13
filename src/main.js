@@ -1,0 +1,132 @@
+// Arcane Automata — bootstrap & game loop.
+// Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
+
+import { RESOURCES, MACHINES } from './data/gamedata.js';
+import { createState, place, applyTick } from './core/state.js';
+import { Panel } from './ui/panel.js';
+
+const TICK_MS = 1000;
+const TILE = 64;
+
+const state = createState();
+const canvas = document.getElementById('world');
+const ctx = canvas.getContext('2d');
+
+// Seed a small starter factory so the simulation visibly does something.
+place(state, 'elementalRefinery', 4, 4);
+place(state, 'aetherCondenser', 6, 4);
+place(state, 'arcaneTransmuter', 5, 6);
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ---- HUD -------------------------------------------------------------------
+const resourceBar = document.getElementById('resource-bar');
+const threatFill = document.getElementById('threat-fill');
+const threatTier = document.getElementById('threat-tier');
+
+function renderHud(tier) {
+  resourceBar.innerHTML = Object.entries(state.resources)
+    .filter(([, v]) => v > 0 || ['manaStream', 'component'].includes(0))
+    .map(([key, v]) => {
+      const r = RESOURCES[key];
+      if (!r) return '';
+      return `<span class="aa-res" title="${r.desc}">${r.icon}&nbsp;${Math.floor(v)}</span>`;
+    }).join('');
+
+  const pct = Math.min(100, (state.residue / 1000) * 100);
+  threatFill.style.width = `${pct}%`;
+  threatFill.style.background = tier.color;
+  threatTier.textContent = `${tier.label} · ${Math.floor(state.residue)}`;
+  threatTier.style.color = tier.color;
+}
+
+// ---- Panels (draggable, position-persisting) -------------------------------
+function buildPanelBody(html) {
+  const el = document.createElement('div');
+  el.innerHTML = html;
+  return el;
+}
+
+const panels = {
+  inventory: new Panel('inventory', 'Resource Inventory', buildPanelBody(
+    Object.values(RESOURCES).map(r =>
+      `<div class="aa-row"><span>${r.icon} ${r.name}</span><em>${r.kind}</em></div>`).join(''))),
+  blueprints: new Panel('blueprints', 'Blueprint Library', buildPanelBody(
+    Object.values(MACHINES).map(m =>
+      `<div class="aa-row"><span>${m.glyph} ${m.name}</span><em>${m.purpose}</em></div>`).join(''))),
+  golems: new Panel('golems', 'Golem Console', buildPanelBody(
+    '<p class="aa-note">Glyph-programmed routing arrives next iteration.</p>')),
+  network: new Panel('network', 'Network — P2P', buildPanelBody(
+    '<p class="aa-note">Host acts as Designated Authority Client. ' +
+    'WebRTC peer mesh planned; the authoritative tick already runs host-side.</p>')),
+};
+
+document.querySelectorAll('.aa-dock-btn').forEach(btn => {
+  btn.addEventListener('click', () => panels[btn.dataset.panel].toggle());
+});
+
+// ---- World render ----------------------------------------------------------
+function renderWorld() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Faint arcane grid.
+  ctx.strokeStyle = 'rgba(120, 160, 220, 0.08)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < canvas.width; x += TILE) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += TILE) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  }
+
+  for (const m of state.machines) {
+    const def = MACHINES[m.type];
+    const px = m.x * TILE, py = m.y * TILE;
+    const glow = m.active ? 18 : 0;
+    ctx.save();
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = '#6fa8ff';
+    ctx.fillStyle = m.active ? 'rgba(40, 58, 96, 0.95)' : 'rgba(30, 34, 44, 0.9)';
+    ctx.strokeStyle = m.active ? '#8fc0ff' : '#5a5f6e';
+    ctx.lineWidth = 2;
+    roundRect(ctx, px, py, TILE - 6, TILE - 6, 8);
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = '#dfe8ff';
+    ctx.font = '26px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(def.glyph, px + (TILE - 6) / 2, py + (TILE - 6) / 2);
+  }
+}
+
+function roundRect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+// ---- Loops -----------------------------------------------------------------
+let tier;
+function simulationStep() {
+  const result = applyTick(state);
+  tier = result.tier;
+  renderHud(tier);
+}
+setInterval(simulationStep, TICK_MS);
+
+function frame() {
+  renderWorld();
+  requestAnimationFrame(frame);
+}
+simulationStep();
+frame();
