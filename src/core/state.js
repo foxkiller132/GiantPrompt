@@ -122,6 +122,17 @@ function adjacentConduits(state, m) {
   ).length;
 }
 
+// Worker Golems currently servicing a machine (within ~1 tile while patrolling).
+// This is the Golemsmith's concrete payoff: each grants a small output bonus.
+function servicingWorkers(state, m) {
+  let n = 0;
+  for (const g of state.golems) {
+    if (g.kind !== 'worker') continue;
+    if (Math.hypot(g.x - (m.x + 0.5), g.y - (m.y + 0.5)) < 1.0) n++;
+  }
+  return n;
+}
+
 // Is a machine type available to place yet (start-unlocked or researched)?
 export function isUnlocked(state, type) {
   if (!TECH_LOCKED.has(type)) return true;
@@ -235,6 +246,7 @@ export function applyTick(state) {
     // its output throughput (+15% each, capped) — the conduit's spec role of
     // keeping high-throughput machines continuously fed.
     const flow = (1 + Math.min(0.6, 0.15 * adjacentConduits(state, m)))
+      * (1 + Math.min(0.4, 0.08 * servicingWorkers(state, m)))
       * levelBonus(m) * outMult * oc * (mod.output ?? 1);
 
     for (const [res, rate] of Object.entries(def.inputs)) {
