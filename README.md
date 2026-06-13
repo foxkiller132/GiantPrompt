@@ -61,9 +61,10 @@ tracked by run **stats**, **achievements**, and a cross-run **lifetime profile**
 **World events** (mana surges, arcane storms) keep long stretches dynamic.
 
 The factory sprawls across a **world larger than the screen**: pan with WASD /
-arrow keys, middle-mouse drag, or click the **minimap** to jump. A home resource
-field surrounds the start, with richer **expansion patches** farther out that
-reward scaling production toward them.
+arrow keys, middle-mouse drag, or click the **minimap** to jump. A node only
+yields once you **claim** it by building a machine nearby — the starter taps the
+home field, while richer **expansion patches** farther out lie dormant until you
+build out to them, driving the classic expand-toward-resources loop.
 
 ## Sessions & multiplayer
 
