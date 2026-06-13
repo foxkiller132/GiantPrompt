@@ -68,6 +68,21 @@ function renderHud(tier) {
   const purFill = document.getElementById('purifier-fill');
   if (purFill) purFill.style.width = `${(state.purifier / PURIFIER_GOAL) * 100}%`;
 
+  // Threat forecast: combine spawn pressure (residue × ascension) with the power
+  // already on the field into a coarse, readable warning level.
+  const fc = document.getElementById('forecast');
+  if (fc) {
+    const asc = 1 + (state.purifications || 0) * 0.3;
+    const onField = state.enemies.reduce((sum, e) => sum + e.power, 0);
+    const pressure = (state.residue / 4000) * asc * 100 + onField;
+    const level = pressure < 15 ? ['Quiet', '#5fd3a8']
+      : pressure < 60 ? ['Building', '#c6d35f']
+      : pressure < 140 ? ['Heavy', '#d39a5f']
+      : ['Overwhelming', '#d35f5f'];
+    fc.textContent = level[0];
+    fc.style.color = level[1];
+  }
+
   const golemCount = document.getElementById('golem-count');
   if (golemCount) golemCount.textContent = String(state.golems.length);
 

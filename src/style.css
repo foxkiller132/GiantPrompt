@@ -50,6 +50,7 @@ html, body {
 }
 .aa-threat-fill { height: 100%; width: 0; transition: width 600ms ease, background 600ms ease; }
 .aa-threat-tier { min-width: 90px; font-variant-numeric: tabular-nums; }
+.aa-forecast { font-size: 13px; font-weight: bold; min-width: 96px; transition: color 500ms ease; }
 
 /* ---- Dock ---- */
 #dock {
