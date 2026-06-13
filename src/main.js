@@ -7,7 +7,7 @@ import { TECH } from './data/gamedata.js';
 import { ACHIEVEMENTS } from './core/achievements.js';
 import { PERKS, perkLevel, spendPerk, canSpendPerk } from './core/perks.js';
 import { WONDERS, hasWonder, canBuildWonder, buildWonder } from './core/wonders.js';
-import { eventActive } from './core/events.js';
+import { eventActive, EVENTS } from './core/events.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses, isMuted, setMuted, getVolume, setVolume } from './ui/feedback.js';
@@ -238,7 +238,17 @@ function buildCodexHTML() {
   const threats = THREAT_TIERS.map(t =>
     `<div class="aa-codex-entry"><div class="aa-codex-name" style="color:${t.color}">${t.label}</div>` +
     `<div class="aa-codex-sub">Foes: ${t.enemies.join(', ')} · up to ${t.max === Infinity ? '∞' : t.max} residue</div></div>`).join('');
+  const entry = (name, sub) =>
+    `<div class="aa-codex-entry"><div class="aa-codex-name">${name}</div><div class="aa-codex-sub">${sub}</div></div>`;
+  const modules = Object.values(MODULES).map(m => entry(`𖤓 ${m.name}`, m.desc)).join('');
+  const wonders = WONDERS.map(w => entry(`✦ ${w.name}`, w.desc)).join('');
+  const perks = PERKS.map(p => entry(p.name, `${p.per} per level (max ${p.max})`)).join('');
+  const events = Object.values(EVENTS).map(e => entry(`✦ ${e.name}`, e.desc)).join('');
   return `<div class="aa-codex-h">Machines</div>${machines}` +
+         `<div class="aa-codex-h">Glyph Modules</div>${modules}` +
+         `<div class="aa-codex-h">Wonders</div>${wonders}` +
+         `<div class="aa-codex-h">Ascension Perks</div>${perks}` +
+         `<div class="aa-codex-h">World Events</div>${events}` +
          `<div class="aa-codex-h">Threat Tiers</div>${threats}`;
 }
 
