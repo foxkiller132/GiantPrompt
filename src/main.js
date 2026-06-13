@@ -5,6 +5,7 @@ import { RESOURCES, MACHINES, threatTierFor, THREAT_TIERS } from './data/gamedat
 import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine } from './core/state.js';
 import { TECH } from './data/gamedata.js';
 import { ACHIEVEMENTS } from './core/achievements.js';
+import { PERKS, perkLevel, spendPerk, canSpendPerk } from './core/perks.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses, isMuted, setMuted, getVolume, setVolume } from './ui/feedback.js';
@@ -102,6 +103,7 @@ function renderHud(tier) {
   refreshResearch();
   refreshStats();
   refreshAchievements();
+  refreshPerks();
 
   if (state.status === 'lost' && !document.getElementById('aa-end')) {
     setSpeed(0);
@@ -167,8 +169,31 @@ const panels = {
   stats: new Panel('stats', 'Run Statistics', buildPanelBody('<div id="stats-list"></div>')),
   achievements: new Panel('achievements', 'Achievements', buildPanelBody('<div id="ach-list"></div>')),
   codex: new Panel('codex', 'Codex', buildPanelBody(buildCodexHTML())),
+  perks: new Panel('perks', 'Ascension Perks', buildPanelBody(
+    '<p class="aa-note">Each Purification grants a perk point.</p>' +
+    '<div class="aa-row"><span>Perk points</span><em id="perk-points">0</em></div><div id="perk-list"></div>')),
   network: new Panel('network', 'Network — P2P', buildNetworkBody()),
 };
+
+function refreshPerks() {
+  const pts = document.getElementById('perk-points');
+  const list = document.getElementById('perk-list');
+  if (!pts || !list) return;
+  pts.textContent = String(state.perkPoints || 0);
+  list.innerHTML = PERKS.map(p => {
+    const lvl = perkLevel(state, p.id);
+    const ready = canSpendPerk(state, p.id);
+    const cls = lvl >= p.max ? 'is-maxed' : ready ? 'is-ready' : 'is-locked';
+    const tag = lvl >= p.max ? 'MAX' : `${p.per}`;
+    return `<div class="aa-row aa-perk ${cls}" data-perk="${p.id}" role="button" tabindex="0" title="${p.desc}">` +
+      `<span>${p.name} <em class="aa-perk-lvl">${lvl}/${p.max}</em></span><em>${tag}</em></div>`;
+  }).join('');
+  list.querySelectorAll('.aa-perk.is-ready').forEach(row => row.addEventListener('click', () => {
+    const id = row.dataset.perk;
+    if (net.role === 'guest' && net.connected) { net.sendIntent('perk', { id }); return; }
+    if (spendPerk(state, id)) { Sound.collect(); refreshPerks(); }
+  }));
+}
 
 // Static reference compiled from the canonical game data.
 function buildCodexHTML() {
@@ -535,6 +560,8 @@ net.onIntent = (kind, args) => {
     upgrade(state, args.id);
   } else if (kind === 'research') {
     research(state, args.tech);
+  } else if (kind === 'perk') {
+    spendPerk(state, args.id);
   } else if (kind === 'cursor') {
     state.peers.guest = { x: args.x, y: args.y };
   } else if (kind === 'demolish') {

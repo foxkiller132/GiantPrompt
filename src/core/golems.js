@@ -7,6 +7,7 @@
 // semi-automated mid game. Movement is deterministic so the DAC stays authoritative.
 
 import { MACHINES } from '../data/gamedata.js';
+import { golemSpeedBonus } from './perks.js';
 
 const FORGE_EVERY = 6;      // ticks between golem production
 const GOLEM_SPEED = 0.15;   // tiles per tick (workers)
@@ -51,7 +52,8 @@ export function tickGolems(state) {
       if (!target) continue;
       const dx = target.x - g.x, dy = target.y - g.y;
       const dist = Math.hypot(dx, dy) || 1;
-      if (dist > 0.4) { g.x += (dx / dist) * COMBAT_SPEED; g.y += (dy / dist) * COMBAT_SPEED; }
+      const cspeed = COMBAT_SPEED + golemSpeedBonus(state);
+      if (dist > 0.4) { g.x += (dx / dist) * cspeed; g.y += (dy / dist) * cspeed; }
       continue;
     }
     if (g.kind === 'mining') {

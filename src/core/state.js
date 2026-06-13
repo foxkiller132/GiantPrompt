@@ -20,6 +20,7 @@ export function purifierGoal(state) {
 import { tickGolems } from './golems.js';
 import { tickEnemies } from './enemies.js';
 import { checkAchievements } from './achievements.js';
+import { outputMultiplier, residueMultiplier } from './perks.js';
 
 export function createState() {
   return {
@@ -36,6 +37,8 @@ export function createState() {
     purifications: 0, // completed purifications (escalating endgame, never terminal)
     stats: { enemiesSlain: 0, machinesBuilt: 0, peakResidue: 0 }, // run statistics
     achievements: [], // unlocked achievement ids
+    perkPoints: 0,    // unspent ascension perk points (1 per purification)
+    perks: {},        // perk id -> level
     status: 'playing', // 'playing' | 'lost' (defeat is recoverable from a save)
     machines: [],   // { id, type, x, y, active, health }
     golems: [],     // { id, kind, x, y, route, leg }
@@ -134,6 +137,7 @@ export function applyTick(state) {
   state.tick++;
   const events = [];
   let residueDelta = 0;
+  const outMult = outputMultiplier(state);
 
   tickNodes(state);
 
@@ -151,7 +155,7 @@ export function applyTick(state) {
     // Flow bonus: each powered Automated Conduit adjacent to this machine boosts
     // its output throughput (+15% each, capped) — the conduit's spec role of
     // keeping high-throughput machines continuously fed.
-    const flow = (1 + Math.min(0.6, 0.15 * adjacentConduits(state, m))) * levelBonus(m);
+    const flow = (1 + Math.min(0.6, 0.15 * adjacentConduits(state, m))) * levelBonus(m) * outMult;
 
     for (const [res, rate] of Object.entries(def.inputs)) {
       state.resources[res] -= rate;
@@ -167,7 +171,7 @@ export function applyTick(state) {
   const enemyResult = tickEnemies(state);
   events.push(...enemyResult.events);
 
-  state.residue += residueDelta;
+  state.residue += residueDelta * residueMultiplier(state);
 
   // Run statistics.
   if (state.stats) {
@@ -192,6 +196,7 @@ export function applyTick(state) {
       state.residue = Math.max(0, state.residue - purifierGoal(state) * 4);
       state.purifier = 0;
       state.purifications += 1;
+      state.perkPoints = (state.perkPoints || 0) + 1; // grant an ascension perk point
       events.push({ type: 'purified', total: state.purifications });
     }
   }

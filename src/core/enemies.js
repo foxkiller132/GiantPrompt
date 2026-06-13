@@ -7,6 +7,7 @@
 // the sole authority over combat outcomes.
 
 import { threatTierFor, MACHINES } from '../data/gamedata.js';
+import { defenseMultiplier } from './perks.js';
 
 const ENEMY_SPEED = 0.08;
 const CONTACT = 0.4;        // tiles
@@ -68,6 +69,7 @@ export function tickEnemies(state, rng = Math.random) {
   }
   // --- Active defense: any powered defensive structure (def.range/def.damage)
   // blasts the nearest enemy in range. Generalized so new towers/spires work. --
+  const defMult = defenseMultiplier(state);
   for (const tower of state.machines.filter(m => MACHINES[m.type].damage && m.active !== false)) {
     const def = MACHINES[tower.type];
     const tx = tower.x + 0.5, ty = tower.y + 0.5;
@@ -76,7 +78,7 @@ export function tickEnemies(state, rng = Math.random) {
       const d = Math.hypot(e.x - tx, e.y - ty);
       if (d < bestD) { bestD = d; best = e; }
     }
-    if (best) { best.hp -= def.damage; tower.firingAt = { x: best.x, y: best.y }; }
+    if (best) { best.hp -= def.damage * defMult; tower.firingAt = { x: best.x, y: best.y }; }
     else tower.firingAt = null;
   }
 
