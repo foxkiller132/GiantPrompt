@@ -149,11 +149,6 @@ export const TECH = {
     cost: { glyph: 40, manaStream: 400 }, unlocks: ['automatedConduit'],
     desc: 'Continuous bulk transport via conduits.',
   },
-  wards: {
-    name: 'Ward Matrices', requires: ['synthesis'],
-    cost: { ingot: 110, manaStream: 350 }, unlocks: ['wardTower'],
-    desc: 'Mana-powered defensive towers.',
-  },
   capacitance: {
     name: 'Mana Capacitance', requires: ['synthesis'],
     cost: { refined: 130, ingot: 100 }, unlocks: ['manaCapacitor'],
@@ -170,7 +165,7 @@ export const TECH = {
     desc: 'Inscribe Processed Runes for high-tier builds.',
   },
   aegis: {
-    name: 'Aegis Protocols', requires: ['runecraft', 'wards'],
+    name: 'Aegis Protocols', requires: ['runecraft'],
     cost: { rune: 100, component: 160 }, unlocks: ['aegisSpire'],
     desc: 'Rune-fuelled heavy defensive spires.',
   },
@@ -183,9 +178,9 @@ export const TECH_LOCKED = new Set(
 
 // Threat escalation is strictly proportional to total Arcane Residue.
 export const THREAT_TIERS = [
-  { id: 'calm',  label: 'Calm',       max: 50,       enemies: ['—'],                          color: '#5fd3a8' },
-  { id: 'early', label: 'Goblins',    max: 250,      enemies: ['Goblin', 'Imp'],              color: '#c6d35f' },
-  { id: 'mid',   label: 'Wraiths',    max: 1000,     enemies: ['Orc', 'Wraith', 'Brute'],     color: '#d39a5f' },
+  { id: 'calm',  label: 'Calm',       max: 400,      enemies: ['—'],                          color: '#5fd3a8' },
+  { id: 'early', label: 'Goblins',    max: 2000,     enemies: ['Goblin', 'Imp'],              color: '#c6d35f' },
+  { id: 'mid',   label: 'Wraiths',    max: 6000,     enemies: ['Orc', 'Wraith', 'Brute'],     color: '#d39a5f' },
   { id: 'late',  label: 'Dragons',    max: Infinity, enemies: ['Dragon', 'Lich', 'Basilisk'], color: '#d35f5f' },
 ];
 

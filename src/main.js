@@ -64,7 +64,7 @@ function renderHud(tier) {
       return `<span class="aa-res" title="${r.desc}">${r.icon}&nbsp;${Math.floor(v)}</span>`;
     }).join('');
 
-  const pct = Math.min(100, (state.residue / 1000) * 100);
+  const pct = Math.min(100, (state.residue / 6000) * 100);
   threatFill.style.width = `${pct}%`;
   threatFill.style.background = tier.color;
   const asc = (state.purifications || 0) > 0 ? ` · ⟡${state.purifications}` : '';
@@ -80,7 +80,7 @@ function renderHud(tier) {
   if (fc) {
     const asc = 1 + (state.purifications || 0) * 0.3;
     const onField = state.enemies.reduce((sum, e) => sum + e.power, 0);
-    const pressure = (state.residue / 4000) * asc * 100 + onField;
+    const pressure = (state.residue / 12000) * asc * 100 + onField;
     const level = pressure < 15 ? ['Quiet', '#5fd3a8']
       : pressure < 60 ? ['Building', '#c6d35f']
       : pressure < 140 ? ['Heavy', '#d39a5f']

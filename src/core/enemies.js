@@ -15,6 +15,7 @@ const ENEMY_SPEED = 0.08;
 const CONTACT = 0.4;        // tiles
 const MAX_ENEMIES = 40;
 const BOSS_EVERY = 90;      // ticks between boss assaults at the late tier
+const MACHINE_HEALTH = 40;  // base machine health — sturdy enough to weather early attrition
 
 // Per-tier combatants. `power` drives sabotage severity; `loot` is resource theft.
 // `speed` (tiles/tick) is optional; defaults to ENEMY_SPEED. Fast raiders pressure
@@ -47,7 +48,7 @@ export function tickEnemies(state, rng = Math.random) {
   // --- Spawning: chance rises with residue, ascension, and difficulty -----
   const diff = state.difficulty || 1;
   if (roster.length && state.enemies.length < MAX_ENEMIES) {
-    const spawnChance = Math.min(0.95, (state.residue / 4000) * asc * diff * eventSpawnMult(state));
+    const spawnChance = Math.min(0.9, (state.residue / 12000) * asc * diff * eventSpawnMult(state));
     if (rng() < spawnChance) {
       const proto = scale(roster[Math.floor(rng() * roster.length)]);
       const edge = spawnEdge(state, rng);
@@ -128,7 +129,7 @@ export function tickEnemies(state, rng = Math.random) {
           break;
         }
       }
-      target.health = (target.health ?? 10) - e.power;
+      target.health = (target.health ?? MACHINE_HEALTH) - e.power;
       events.push({ type: 'sabotage', enemy: e.name, machine: target.id });
       if (target.health <= 0) {
         state.machines = state.machines.filter(m => m.id !== target.id);
