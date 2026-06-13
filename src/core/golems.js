@@ -8,6 +8,7 @@
 
 import { MACHINES } from '../data/gamedata.js';
 import { golemSpeedBonus } from './perks.js';
+import { nodeClaimed } from './state.js';
 
 const FORGE_EVERY = 6;      // ticks between golem production
 const GOLEM_SPEED = 0.15;   // tiles per tick (workers)
@@ -57,10 +58,12 @@ export function tickGolems(state) {
       continue;
     }
     if (g.kind === 'mining') {
-      // Travel to the nearest live node; while stationed, boost its extraction.
+      // Travel to the nearest *claimed* live node; while stationed, boost its
+      // extraction. Gating on claimed keeps the claim rule the single source of
+      // truth for whether a node yields — golems reinforce, never bypass it.
       let node = null, bestD = Infinity;
       for (const n of state.nodes || []) {
-        if (n.reserve <= 0) continue;
+        if (n.reserve <= 0 || !nodeClaimed(state, n)) continue;
         const d = Math.hypot((n.x + 0.5) - g.x, (n.y + 0.5) - g.y);
         if (d < bestD) { bestD = d; node = n; }
       }
