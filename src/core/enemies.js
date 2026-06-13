@@ -150,14 +150,22 @@ export function tickEnemies(state, rng = Math.random) {
   return { events, tier };
 }
 
+function factoryCentroid(state) {
+  const ms = state.machines;
+  if (!ms.length) return { x: 17, y: 11 };
+  let sx = 0, sy = 0;
+  for (const m of ms) { sx += m.x; sy += m.y; }
+  return { x: sx / ms.length, y: sy / ms.length };
+}
+
 function spawnEdge(state, rng) {
-  // Spawn just off one of the four map edges relative to the factory centroid.
-  const side = Math.floor(rng() * 4);
-  const span = 24;
-  if (side === 0) return { x: rng() * span, y: -1 };
-  if (side === 1) return { x: span, y: rng() * span };
-  if (side === 2) return { x: rng() * span, y: span };
-  return { x: -1, y: rng() * span };
+  // Spawn on a ring around the factory centroid, from a random direction, so foes
+  // always converge from the surrounding edges relative to wherever you build —
+  // independent of world size or which expansion area you've settled.
+  const c = factoryCentroid(state);
+  const radius = 16 + rng() * 6;
+  const a = rng() * Math.PI * 2;
+  return { x: c.x + Math.cos(a) * radius, y: c.y + Math.sin(a) * radius };
 }
 
 const CORE_TYPES = new Set(['aetherCondenser', 'arcaneTransmuter']);
