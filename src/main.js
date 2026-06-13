@@ -429,6 +429,40 @@ function renderWorld() {
 
   drawPulses(ctx, TILE, 1 / 60);
   build.drawGhost(ctx);
+  drawMinimap();
+}
+
+// Minimap: a compact overview of the factory, enemies, and nodes in a corner.
+const MAP_SPAN = 24; // world tiles represented edge-to-edge
+function drawMinimap() {
+  const size = 150, pad = 14;
+  const ox = canvas.width - size - pad, oy = canvas.height - size - pad - 44;
+  const s = size / MAP_SPAN;
+  ctx.save();
+  ctx.fillStyle = 'rgba(10,12,18,0.82)';
+  ctx.strokeStyle = 'rgba(201,164,90,0.5)';
+  ctx.lineWidth = 1;
+  roundRect(ctx, ox, oy, size, size, 8);
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.rect(ox, oy, size, size); ctx.clip();
+
+  for (const n of state.nodes) {
+    ctx.fillStyle = n.reserve > 0 ? 'rgba(159,200,255,0.7)' : 'rgba(120,120,120,0.4)';
+    ctx.fillRect(ox + n.x * s, oy + n.y * s, 3, 3);
+  }
+  for (const m of state.machines) {
+    ctx.fillStyle = m.active === false ? '#6a6f7e' : '#8fc0ff';
+    ctx.fillRect(ox + m.x * s, oy + m.y * s, 4, 4);
+  }
+  for (const g of state.golems) {
+    ctx.fillStyle = '#9fffd0';
+    ctx.fillRect(ox + g.x * s, oy + g.y * s, 2, 2);
+  }
+  for (const e of state.enemies) {
+    ctx.fillStyle = '#ff7b7b';
+    ctx.fillRect(ox + e.x * s, oy + e.y * s, 3, 3);
+  }
+  ctx.restore();
 }
 
 function roundRect(c, x, y, w, h, r) {
