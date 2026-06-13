@@ -213,6 +213,8 @@ net.onIntent = (kind, args) => {
     upgrade(state, args.id);
   } else if (kind === 'research') {
     research(state, args.tech);
+  } else if (kind === 'cursor') {
+    state.peers.guest = { x: args.x, y: args.y };
   }
 };
 
@@ -225,6 +227,19 @@ function commitPlace(type, gx, gy) {
   renderHud(tier);
 }
 const build = new BuildController(state, canvas, TILE, commitPlace);
+
+// Presence: broadcast our cursor (tile-space) to the peer, throttled.
+let lastCursorSent = 0;
+canvas.addEventListener('pointermove', (e) => {
+  if (!net.connected) return;
+  const now = performance.now();
+  if (now - lastCursorSent < 60) return;
+  lastCursorSent = now;
+  const r = canvas.getBoundingClientRect();
+  const pos = { x: (e.clientX - r.left) / TILE, y: (e.clientY - r.top) / TILE };
+  if (net.role === 'guest') net.sendIntent('cursor', pos);
+  else state.peers.host = pos; // host carries its own cursor in the snapshot
+});
 
 // Click a placed machine (when not building) to upgrade it with Glyphs.
 canvas.addEventListener('click', (e) => {
@@ -360,6 +375,27 @@ function renderWorld() {
     ctx.arc(px, py, 5 + Math.min(6, e.power), 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+  }
+
+  // Peer presence cursor: show the *other* player's pointer.
+  if (net.connected) {
+    const peer = net.role === 'guest' ? state.peers.host : state.peers.guest;
+    if (peer) {
+      const px = peer.x * TILE, py = peer.y * TILE;
+      ctx.save();
+      ctx.shadowBlur = 10; ctx.shadowColor = '#c9a45a';
+      ctx.fillStyle = '#f0d89a';
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px, py + 16);
+      ctx.lineTo(px + 5, py + 11);
+      ctx.lineTo(px + 11, py + 11);
+      ctx.closePath();
+      ctx.fill();
+      ctx.font = '11px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText(net.role === 'guest' ? 'host' : 'guest', px + 12, py + 10);
+      ctx.restore();
+    }
   }
 
   drawPulses(ctx, TILE, 1 / 60);
