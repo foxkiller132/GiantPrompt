@@ -22,6 +22,39 @@ import { getProfile, recordRunStarted, recordPurification, recordSlain } from '.
 const TICK_MS = 1000;
 const TILE = 64;
 
+// The world is larger than the viewport; a camera pans across it so the factory
+// can sprawl over a long run. The viewport is the visible window; `cam` is its
+// top-left in world pixels. All world drawing happens under a ctx translate by
+// -cam, so geometry uses raw world coords; only input mapping, grid, and the
+// minimap are camera-aware.
+const WORLD = { w: 38, h: 24 };
+const cam = { x: 0, y: 0 };
+
+function clampCam() {
+  cam.x = Math.min(Math.max(0, WORLD.w * TILE - canvas.width), Math.max(0, cam.x));
+  cam.y = Math.min(Math.max(0, WORLD.h * TILE - canvas.height), Math.max(0, cam.y));
+}
+// Map a pointer event to the world tile under it (accounting for the camera).
+function screenToTile(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    gx: Math.floor((e.clientX - r.left + cam.x) / TILE),
+    gy: Math.floor((e.clientY - r.top + cam.y) / TILE),
+  };
+}
+function centerCamOn(tx, ty) {
+  cam.x = tx * TILE - canvas.width / 2;
+  cam.y = ty * TILE - canvas.height / 2;
+  clampCam();
+}
+// Center the view on the player's factory (used after loading a save).
+function centerCamOnFactory() {
+  if (!state.machines.length) { clampCam(); return; }
+  const cx = state.machines.reduce((s, m) => s + m.x, 0) / state.machines.length;
+  const cy = state.machines.reduce((s, m) => s + m.y, 0) / state.machines.length;
+  centerCamOn(cx, cy);
+}
+
 const state = createState();
 const canvas = document.getElementById('world');
 const ctx = canvas.getContext('2d');
@@ -32,27 +65,30 @@ const ctx = canvas.getContext('2d');
 function newWorld() {
   restore(state, snapshot(createState()));
   state.researched.push('synthesis');
-  place(state, 'elementalRefinery', 4, 4);
-  place(state, 'aetherCondenser', 6, 4);
-  place(state, 'arcaneTransmuter', 5, 6);
-  // Natural raw-element nodes feed the refinery; a mana node feeds the condenser.
-  // A resource field with room to scale: two nodes per element plus mana sources,
-  // each with throughput headroom for several refineries/condensers as you expand.
-  // Kept within ~12x10 tiles so the whole field stays on-screen (there is no
-  // camera/scroll — the playfield is the visible window).
+  place(state, 'elementalRefinery', 16, 10);
+  place(state, 'aetherCondenser', 18, 10);
+  place(state, 'arcaneTransmuter', 17, 12);
+  // A home resource field around the starting area (rate 3/2), plus richer
+  // expansion patches farther out (rate 4) that reward panning across the larger
+  // world and scaling production toward them — the classic factory growth loop.
   seedNodes(state, [
-    { element: 'fire',  x: 1,  y: 2, rate: 3 }, { element: 'fire',  x: 2,  y: 9, rate: 3 },
-    { element: 'water', x: 11, y: 2, rate: 3 }, { element: 'water', x: 10, y: 9, rate: 3 },
-    { element: 'earth', x: 1,  y: 6, rate: 3 }, { element: 'earth', x: 5,  y: 9, rate: 3 },
-    { element: 'air',   x: 11, y: 6, rate: 3 }, { element: 'air',   x: 8,  y: 9, rate: 3 },
-    { element: 'manaCrystal', x: 6, y: 2, rate: 2 }, { element: 'manaCrystal', x: 6, y: 8, rate: 2 },
+    // Home field (immediately around the start)
+    { element: 'fire',  x: 12, y: 8,  rate: 3 }, { element: 'water', x: 22, y: 8,  rate: 3 },
+    { element: 'earth', x: 12, y: 14, rate: 3 }, { element: 'air',   x: 22, y: 14, rate: 3 },
+    { element: 'manaCrystal', x: 17, y: 7, rate: 2 }, { element: 'manaCrystal', x: 17, y: 16, rate: 2 },
+    // Expansion patches (farther out, richer)
+    { element: 'fire',  x: 3,  y: 3,  rate: 4 }, { element: 'water', x: 34, y: 4,  rate: 4 },
+    { element: 'earth', x: 4,  y: 20, rate: 4 }, { element: 'air',   x: 33, y: 20, rate: 4 },
+    { element: 'manaCrystal', x: 35, y: 12, rate: 3 },
   ]);
+  centerCamOn(17, 11);
   lastStatus = 'playing';
 }
 
 function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+  clampCam();
 }
 window.addEventListener('resize', resize);
 resize();
@@ -154,7 +190,7 @@ function renderHud(tier) {
     document.body.appendChild(overlay);
     const loadBtn = document.getElementById('end-load');
     if (loadBtn) loadBtn.addEventListener('click', () => {
-      if (loadGame(state)) { state.status = 'playing'; overlay.remove(); setSpeed(1); }
+      if (loadGame(state)) { state.status = 'playing'; centerCamOnFactory(); overlay.remove(); setSpeed(1); }
     });
     document.getElementById('end-menu').addEventListener('click', () => {
       overlay.remove(); openMainMenu();
@@ -458,7 +494,7 @@ function openMainMenu() {
   showMenuPage('main');
   menuVeil.hidden = false;
 }
-function startGame() { menuVeil.hidden = true; Sound.portal(); setSpeed(defaultSpeed); }
+function startGame() { menuVeil.hidden = true; Sound.portal(); centerCamOnFactory(); setSpeed(defaultSpeed); }
 
 function fmtSlotName(meta, slot) {
   return (meta && meta.name) ? meta.name : `Slot ${slot + 1}`;
@@ -558,6 +594,38 @@ window.addEventListener('keydown', (e) => {
   if (e.code === keybinds.pause) { e.preventDefault(); setSpeed(gameSpeed > 0 ? 0 : 1); }
   else if (e.code === keybinds.demolish) { setDemolish(!demolishMode); }
 });
+
+// ---- Camera panning: WASD/arrow keys (held) + middle-mouse drag -------------
+const panKeys = new Set();
+const PAN_CODES = { ArrowUp: 'u', ArrowDown: 'd', ArrowLeft: 'l', ArrowRight: 'r',
+                    KeyW: 'u', KeyS: 'd', KeyA: 'l', KeyD: 'r' };
+window.addEventListener('keydown', (e) => {
+  if (!menuVeil.hidden || e.target !== document.body) return;
+  if (PAN_CODES[e.code]) { panKeys.add(PAN_CODES[e.code]); e.preventDefault(); }
+});
+window.addEventListener('keyup', (e) => { if (PAN_CODES[e.code]) panKeys.delete(PAN_CODES[e.code]); });
+
+let camDrag = null;
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.button === 1) { camDrag = { x: e.clientX, y: e.clientY }; e.preventDefault(); }
+});
+window.addEventListener('pointermove', (e) => {
+  if (!camDrag) return;
+  cam.x -= e.clientX - camDrag.x; cam.y -= e.clientY - camDrag.y;
+  camDrag = { x: e.clientX, y: e.clientY };
+  clampCam();
+});
+window.addEventListener('pointerup', (e) => { if (e.button === 1) camDrag = null; });
+
+function updateCamera() {
+  if (!panKeys.size) return;
+  const step = 16;
+  if (panKeys.has('u')) cam.y -= step;
+  if (panKeys.has('d')) cam.y += step;
+  if (panKeys.has('l')) cam.x -= step;
+  if (panKeys.has('r')) cam.x += step;
+  clampCam();
+}
 
 // Settings live here so they're reachable from the menu and persist to localStorage.
 let autosaveEvery = Number(localStorage.getItem('aa:autosave') ?? '20');
@@ -713,7 +781,7 @@ function commitPlace(type, gx, gy) {
   pulse(m.x, m.y, '#c9a45a');
   renderHud(tier);
 }
-const build = new BuildController(state, canvas, TILE, commitPlace);
+const build = new BuildController(state, canvas, TILE, commitPlace, cam, WORLD);
 
 // Machine inspector: hover a placed machine to see its recipe, level, and status.
 const inspector = document.getElementById('inspector');
@@ -724,9 +792,7 @@ function fmtRates(rates) {
 }
 canvas.addEventListener('pointermove', (e) => {
   if (build.isActive()) { inspector.hidden = true; return; }
-  const r = canvas.getBoundingClientRect();
-  const gx = Math.floor((e.clientX - r.left) / TILE);
-  const gy = Math.floor((e.clientY - r.top) / TILE);
+  const { gx, gy } = screenToTile(e);
   const m = state.machines.find(x => x.x === gx && x.y === gy);
   if (!m) { inspector.hidden = true; return; }
   const def = MACHINES[m.type];
@@ -756,7 +822,7 @@ canvas.addEventListener('pointermove', (e) => {
   if (now - lastCursorSent < 60) return;
   lastCursorSent = now;
   const r = canvas.getBoundingClientRect();
-  const pos = { x: (e.clientX - r.left) / TILE, y: (e.clientY - r.top) / TILE };
+  const pos = { x: (e.clientX - r.left + cam.x) / TILE, y: (e.clientY - r.top + cam.y) / TILE };
   if (net.role === 'guest') net.sendIntent('cursor', pos);
   else state.peers.host = pos; // host carries its own cursor in the snapshot
 });
@@ -771,12 +837,27 @@ function setDemolish(on) {
   if (btn) btn.classList.toggle('is-active', on);
 }
 
+// Minimap click (capture phase) recenters the camera and is consumed before the
+// build/inspect click handlers can act on it.
+function overMinimap(e) {
+  const r = canvas.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  return x >= minimap.x && x <= minimap.x + minimap.size &&
+         y >= minimap.y && y <= minimap.y + minimap.size;
+}
+canvas.addEventListener('click', (e) => {
+  if (!overMinimap(e)) return;
+  const r = canvas.getBoundingClientRect();
+  const tx = ((e.clientX - r.left) - minimap.x) / minimap.size * WORLD.w;
+  const ty = ((e.clientY - r.top) - minimap.y) / minimap.size * WORLD.h;
+  centerCamOn(tx, ty);
+  e.stopImmediatePropagation();
+}, true);
+
 // Click a placed machine (when not building) to upgrade it with Glyphs.
 canvas.addEventListener('click', (e) => {
   if (build.isActive()) return;
-  const r = canvas.getBoundingClientRect();
-  const gx = Math.floor((e.clientX - r.left) / TILE);
-  const gy = Math.floor((e.clientY - r.top) / TILE);
+  const { gx, gy } = screenToTile(e);
   const m = state.machines.find(x => x.x === gx && x.y === gy);
   if (!m) return;
 
@@ -828,15 +909,23 @@ function refreshBlueprintLocks() {
 function renderWorld() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Faint arcane grid.
+  // Everything from here draws in world space; translate by the camera once.
+  ctx.save();
+  ctx.translate(-cam.x, -cam.y);
+
+  // Faint arcane grid across the whole world, plus a border to mark its edges.
+  const W = WORLD.w * TILE, H = WORLD.h * TILE;
   ctx.strokeStyle = 'rgba(120, 160, 220, 0.08)';
   ctx.lineWidth = 1;
-  for (let x = 0; x < canvas.width; x += TILE) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  for (let x = 0; x <= W; x += TILE) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
   }
-  for (let y = 0; y < canvas.height; y += TILE) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  for (let y = 0; y <= H; y += TILE) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
+  ctx.strokeStyle = 'rgba(201,164,90,0.25)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(0, 0, W, H);
 
   // Raw-element nodes — faint crystalline deposits beneath the factory layer.
   for (const n of state.nodes) {
@@ -1030,15 +1119,19 @@ function renderWorld() {
 
   drawPulses(ctx, TILE, 1 / 60);
   build.drawGhost(ctx);
+
+  ctx.restore(); // end world-space transform
   drawMinimap();
 }
 
-// Minimap: a compact overview of the factory, enemies, and nodes in a corner.
-const MAP_SPAN = 24; // world tiles represented edge-to-edge
+// Minimap: a compact overview of the whole world with the current viewport box.
+// Stored rect lets clicks on it recenter the camera.
+const minimap = { x: 0, y: 0, size: 160 };
 function drawMinimap() {
-  const size = 150, pad = 14;
+  const size = minimap.size, pad = 14;
   const ox = canvas.width - size - pad, oy = canvas.height - size - pad - 44;
-  const s = size / MAP_SPAN;
+  minimap.x = ox; minimap.y = oy;
+  const sx = size / WORLD.w, sy = size / WORLD.h;
   ctx.save();
   ctx.fillStyle = 'rgba(10,12,18,0.82)';
   ctx.strokeStyle = 'rgba(201,164,90,0.5)';
@@ -1049,20 +1142,25 @@ function drawMinimap() {
 
   for (const n of state.nodes) {
     ctx.fillStyle = n.reserve > 0 ? 'rgba(159,200,255,0.7)' : 'rgba(120,120,120,0.4)';
-    ctx.fillRect(ox + n.x * s, oy + n.y * s, 3, 3);
+    ctx.fillRect(ox + n.x * sx, oy + n.y * sy, 3, 3);
   }
   for (const m of state.machines) {
     ctx.fillStyle = m.active === false ? '#6a6f7e' : '#8fc0ff';
-    ctx.fillRect(ox + m.x * s, oy + m.y * s, 4, 4);
+    ctx.fillRect(ox + m.x * sx, oy + m.y * sy, 4, 4);
   }
   for (const g of state.golems) {
     ctx.fillStyle = '#9fffd0';
-    ctx.fillRect(ox + g.x * s, oy + g.y * s, 2, 2);
+    ctx.fillRect(ox + g.x * sx, oy + g.y * sy, 2, 2);
   }
   for (const e of state.enemies) {
     ctx.fillStyle = '#ff7b7b';
-    ctx.fillRect(ox + e.x * s, oy + e.y * s, 3, 3);
+    ctx.fillRect(ox + e.x * sx, oy + e.y * sy, 3, 3);
   }
+  // Current viewport rectangle.
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(ox + (cam.x / TILE) * sx, oy + (cam.y / TILE) * sy,
+                 (canvas.width / TILE) * sx, (canvas.height / TILE) * sy);
   ctx.restore();
 }
 
@@ -1135,6 +1233,7 @@ document.querySelectorAll('#dock .aa-speed').forEach(btn =>
   btn.addEventListener('click', () => setSpeed(Number(btn.dataset.speed))));
 
 function frame() {
+  updateCamera();
   renderWorld();
   requestAnimationFrame(frame);
 }

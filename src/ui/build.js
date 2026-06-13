@@ -11,11 +11,13 @@ export class BuildController {
   // `commit(type, gx, gy)` performs the actual placement. In solo/host play it
   // calls the authoritative place(); as a guest it sends a network intent. This
   // keeps the controller agnostic to who owns the state.
-  constructor(state, canvas, tile, commit) {
+  constructor(state, canvas, tile, commit, cam = { x: 0, y: 0 }, world = null) {
     this.state = state;
     this.canvas = canvas;
     this.tile = tile;
     this.commit = commit || (() => {});
+    this.cam = cam;                // live camera offset (world px)
+    this.world = world;            // { w, h } tile bounds, or null for unbounded
     this.selected = null;          // machine type key, or null
     this.ghost = { x: -1, y: -1, valid: false };
 
@@ -42,24 +44,31 @@ export class BuildController {
     return this.state.machines.some(m => m.x === gx && m.y === gy);
   }
 
+  inBounds(gx, gy) {
+    // gy >= 1 keeps the top world row clear so a machine can't hide behind the
+    // fixed HUD bar when the camera is scrolled to the top edge.
+    if (!this.world) return gy >= 1;
+    return gx >= 0 && gy >= 1 && gx < this.world.w && gy < this.world.h;
+  }
+
   _tileFromEvent(e) {
     const r = this.canvas.getBoundingClientRect();
     return {
-      gx: Math.floor((e.clientX - r.left) / this.tile),
-      gy: Math.floor((e.clientY - r.top) / this.tile),
+      gx: Math.floor((e.clientX - r.left + this.cam.x) / this.tile),
+      gy: Math.floor((e.clientY - r.top + this.cam.y) / this.tile),
     };
   }
 
   _hover(e) {
     if (!this.selected) return;
     const { gx, gy } = this._tileFromEvent(e);
-    this.ghost = { x: gx, y: gy, valid: !this.occupied(gx, gy) && gy >= 1 };
+    this.ghost = { x: gx, y: gy, valid: !this.occupied(gx, gy) && this.inBounds(gx, gy) };
   }
 
   _click(e) {
     if (!this.selected) return;
     const { gx, gy } = this._tileFromEvent(e);
-    if (this.occupied(gx, gy) || gy < 1) return; // keep top row clear of the HUD
+    if (this.occupied(gx, gy) || !this.inBounds(gx, gy)) return;
     this.commit(this.selected, gx, gy);
     // Hold the tool for rapid placement; Shift releases after one drop.
     if (e.shiftKey) this.cancel();
