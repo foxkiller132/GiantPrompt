@@ -724,14 +724,14 @@ function renderWorld() {
     }
   }
 
-  // Ward Towers — faint range ring + a beam to the current target.
-  for (const t of state.machines.filter(m => m.type === 'wardTower')) {
+  // Defensive structures — faint range ring + a beam to the current target.
+  for (const t of state.machines.filter(m => MACHINES[m.type].range && MACHINES[m.type].damage)) {
     const cx = (t.x + 0.5) * TILE, cy = (t.y + 0.5) * TILE;
     ctx.save();
     ctx.strokeStyle = 'rgba(143,192,255,0.18)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(cx, cy, MACHINES.wardTower.range * TILE, 0, Math.PI * 2);
+    ctx.arc(cx, cy, MACHINES[t.type].range * TILE, 0, Math.PI * 2);
     ctx.stroke();
     if (t.firingAt && t.active !== false) {
       ctx.strokeStyle = 'rgba(159,220,255,0.85)';

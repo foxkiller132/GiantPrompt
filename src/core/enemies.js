@@ -66,9 +66,10 @@ export function tickEnemies(state, rng = Math.random) {
     }
     if (best) best.hp -= dmg;
   }
-  // --- Active defense: powered Ward Towers blast the nearest enemy in range --
-  for (const tower of state.machines.filter(m => m.type === 'wardTower' && m.active !== false)) {
-    const def = MACHINES.wardTower;
+  // --- Active defense: any powered defensive structure (def.range/def.damage)
+  // blasts the nearest enemy in range. Generalized so new towers/spires work. --
+  for (const tower of state.machines.filter(m => MACHINES[m.type].damage && m.active !== false)) {
+    const def = MACHINES[tower.type];
     const tx = tower.x + 0.5, ty = tower.y + 0.5;
     let best = null, bestD = def.range;
     for (const e of state.enemies) {

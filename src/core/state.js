@@ -27,7 +27,7 @@ export function createState() {
     residue: 0,
     resources: {
       manaCrystal: 25, fire: 40, water: 40, earth: 40, air: 40,
-      manaStream: 0, refined: 0, ingot: 0, component: 4, glyph: 0,
+      manaStream: 0, refined: 0, ingot: 0, component: 4, glyph: 0, rune: 0,
     },
     peers: {},      // { host:{x,y}, guest:{x,y} } — live cursor presence
     researched: [], // unlocked tech ids

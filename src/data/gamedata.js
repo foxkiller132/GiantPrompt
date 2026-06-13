@@ -14,6 +14,7 @@ export const RESOURCES = {
   ingot:        { name: 'Basic Ingot',        icon: '▰', kind: 'refined',  desc: 'Smelted from crude metals.' },
   component:    { name: 'Specialized Component',icon: '⚙', kind: 'crafted', desc: 'Built by the Arcane Transmuter.' },
   glyph:        { name: 'Glyph',              icon: '𖤓', kind: 'crafted',  desc: 'Blueprint / keying artifact.' },
+  rune:         { name: 'Processed Rune',     icon: 'ᚱ', kind: 'crafted',  desc: 'Inscribed rune; fuels high-tier infrastructure and defense.' },
 };
 
 // Each machine lists its spec inputs/outputs as { resource: ratePerTick }.
@@ -84,6 +85,31 @@ export const MACHINES = {
     range: 3.5, damage: 4,
     notes: 'Mana-powered defensive system; blasts the nearest enemy in range each tick.',
   },
+  runeForge: {
+    name: 'Rune Forge', glyph: 'ᛟ', category: 'processing',
+    purpose: 'Rune Inscription',
+    inputs:  { ingot: 1, glyph: 0.25 },
+    outputs: { rune: 1 },
+    residue: 2,
+    notes: 'Inscribes Processed Runes for high-tier infrastructure and defense.',
+  },
+  manaCapacitor: {
+    name: 'Mana Capacitor', glyph: '⊟', category: 'infrastructure',
+    purpose: 'Mana Buffering',
+    inputs:  { manaStream: 4 },
+    outputs: { manaCrystal: 1 },
+    residue: 0,
+    notes: 'Stores surplus Mana Stream as Stable Mana Crystals to smooth demand spikes.',
+  },
+  aegisSpire: {
+    name: 'Aegis Spire', glyph: '⍟', category: 'defense',
+    purpose: 'Heavy Active Defense',
+    inputs:  { rune: 1, manaStream: 2 },
+    outputs: {},
+    residue: 2,
+    range: 5, damage: 9,
+    notes: 'Rune-fuelled defensive spire with long reach and heavy damage.',
+  },
 };
 
 // Research tree. The Arcane Transmuter is the "research lab": spending the listed
@@ -119,6 +145,21 @@ export const TECH = {
     name: 'Ward Matrices', requires: ['synthesis'],
     cost: { ingot: 8, manaStream: 25 }, unlocks: ['wardTower'],
     desc: 'Mana-powered defensive towers.',
+  },
+  capacitance: {
+    name: 'Mana Capacitance', requires: ['synthesis'],
+    cost: { refined: 10, ingot: 8 }, unlocks: ['manaCapacitor'],
+    desc: 'Buffer surplus mana as crystals to smooth demand.',
+  },
+  runecraft: {
+    name: 'Runecraft', requires: ['glyphcraft'],
+    cost: { ingot: 10, glyph: 5 }, unlocks: ['runeForge'],
+    desc: 'Inscribe Processed Runes for high-tier builds.',
+  },
+  aegis: {
+    name: 'Aegis Protocols', requires: ['runecraft', 'wards'],
+    cost: { rune: 8, component: 10 }, unlocks: ['aegisSpire'],
+    desc: 'Rune-fuelled heavy defensive spires.',
   },
 };
 
