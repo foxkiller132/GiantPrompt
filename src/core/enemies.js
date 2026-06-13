@@ -56,9 +56,11 @@ export function tickEnemies(state, rng = Math.random) {
   // --- Boss waves: at the late tier, periodically unleash a single Elder boss --
   if (tier.id === 'late' && state.tick % BOSS_EVERY === 0 &&
       !state.enemies.some(e => e.isBoss)) {
-    const boss = scale(rng() < 0.5
-      ? { name: 'Elder Lich', hp: 140, power: 14, loot: 12 }
-      : { name: 'Ancient Dragon', hp: 180, power: 18, loot: 14 });
+    const roll = rng();
+    const proto = roll < 0.34 ? { name: 'Elder Lich', hp: 140, power: 14, loot: 12 }
+      : roll < 0.67 ? { name: 'Ancient Dragon', hp: 180, power: 18, loot: 14 }
+      : { name: 'Hex Tyrant', hp: 160, power: 10, loot: 10, suppress: 3.5 }; // disables nearby machines
+    const boss = { ...scale(proto), suppress: proto.suppress };
     const edge = spawnEdge(state, rng);
     state.enemies.push({ id: state.nextId++, ...boss, maxHp: boss.hp, isBoss: true, x: edge.x, y: edge.y });
   }
@@ -120,6 +122,13 @@ export function tickEnemies(state, rng = Math.random) {
       e.y += (dy / dist) * sp;
     }
   }
+  // --- Suppression: a Hex Tyrant disables machines within its aura (next tick) --
+  const suppressors = state.enemies.filter(e => e.suppress);
+  for (const m of state.machines) {
+    m.suppressed = suppressors.some(b =>
+      Math.hypot((m.x + 0.5) - b.x, (m.y + 0.5) - b.y) <= b.suppress);
+  }
+
   return { events, tier };
 }
 

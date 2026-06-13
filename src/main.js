@@ -805,6 +805,16 @@ function renderWorld() {
   // Enemies — ember-red motes converging on the factory; bosses loom larger.
   for (const e of state.enemies) {
     const px = e.x * TILE, py = e.y * TILE;
+    // Hex Tyrant suppression aura.
+    if (e.suppress) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(180,100,220,0.35)';
+      ctx.fillStyle = 'rgba(140,70,200,0.08)';
+      ctx.lineWidth = 2; ctx.setLineDash([5, 6]);
+      ctx.beginPath(); ctx.arc(px, py, e.suppress * TILE, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
     const r = e.isBoss ? 16 : 5 + Math.min(6, e.power);
     ctx.save();
     ctx.shadowBlur = e.isBoss ? 22 : 12; ctx.shadowColor = e.isBoss ? '#ff3b3b' : '#ff6b6b';

@@ -145,8 +145,8 @@ export function applyTick(state) {
   for (const m of state.machines) {
     const def = MACHINES[m.type];
 
-    // A machine only runs if every required input is fully available this tick.
-    const canRun = Object.entries(def.inputs).every(
+    // A machine runs only if not suppressed and every input is available.
+    const canRun = !m.suppressed && Object.entries(def.inputs).every(
       ([res, rate]) => (state.resources[res] || 0) >= rate
     );
 
