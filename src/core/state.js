@@ -327,5 +327,10 @@ export function snapshot(state) {
 }
 
 export function restore(state, snap) {
-  Object.assign(state, JSON.parse(JSON.stringify(snap)));
+  // Merge the snapshot onto a fresh default base so any field absent from an
+  // older save gets its current default rather than a stale value left over in
+  // the live state object — keeping save migration robust as fields are added.
+  const merged = createState();
+  Object.assign(merged, JSON.parse(JSON.stringify(snap)));
+  Object.assign(state, merged);
 }
