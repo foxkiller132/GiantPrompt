@@ -6,7 +6,7 @@ import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapsho
 import { TECH } from './data/gamedata.js';
 import { Panel } from './ui/panel.js';
 import { BuildController } from './ui/build.js';
-import { Sound, pulse, drawPulses } from './ui/feedback.js';
+import { Sound, pulse, drawPulses, isMuted, setMuted } from './ui/feedback.js';
 import { Net } from './net/p2p.js';
 import { saveGame, loadGame, hasSave } from './core/save.js';
 
@@ -184,6 +184,12 @@ wireNetworkPanel();
 document.querySelectorAll('#dock .aa-dock-btn[data-panel]').forEach(btn => {
   btn.addEventListener('click', () => panels[btn.dataset.panel].toggle());
 });
+
+// Sound mute toggle.
+const muteBtn = document.getElementById('dock-mute');
+function refreshMute() { muteBtn.textContent = isMuted() ? '🔇' : '🔊'; }
+muteBtn.addEventListener('click', () => { setMuted(!isMuted()); refreshMute(); });
+refreshMute();
 
 // Demolish toggle (dock button + 'X' key).
 document.getElementById('dock-demolish').addEventListener('click', () => setDemolish(!demolishMode));

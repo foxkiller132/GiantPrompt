@@ -6,7 +6,16 @@
 // browsers don't block it.
 
 let actx = null;
+let muted = localStorage.getItem('aa:muted') === '1';
+
+export function isMuted() { return muted; }
+export function setMuted(on) {
+  muted = on;
+  localStorage.setItem('aa:muted', on ? '1' : '0');
+}
+
 function audio() {
+  if (muted) return null;
   if (!actx) {
     try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
     catch { actx = null; }
