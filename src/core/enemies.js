@@ -6,7 +6,7 @@
 // (late). All resolution is deterministic and centralized so the host/DAC remains
 // the sole authority over combat outcomes.
 
-import { threatTierFor, MACHINES } from '../data/gamedata.js';
+import { threatTierFor, MACHINES, MACHINE_HEALTH } from '../data/gamedata.js';
 import { defenseMultiplier } from './perks.js';
 import { wonderDefenseMult } from './wonders.js';
 import { eventSpawnMult } from './events.js';
@@ -15,7 +15,6 @@ const ENEMY_SPEED = 0.08;
 const CONTACT = 0.4;        // tiles
 const MAX_ENEMIES = 40;
 const BOSS_EVERY = 90;      // ticks between boss assaults at the late tier
-const MACHINE_HEALTH = 40;  // base machine health — sturdy enough to weather early attrition
 
 // Per-tier combatants. `power` drives sabotage severity; `loot` is resource theft.
 // `speed` (tiles/tick) is optional; defaults to ENEMY_SPEED. Fast raiders pressure

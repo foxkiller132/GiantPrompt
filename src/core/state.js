@@ -7,7 +7,7 @@
 // Keeping mutation centralized and deterministic is what makes that validation
 // (and desync/cheat detection) tractable later.
 
-import { MACHINES, threatTierFor, TECH, TECH_LOCKED, MODULES, MODULE_CYCLE } from '../data/gamedata.js';
+import { MACHINES, threatTierFor, TECH, TECH_LOCKED, MODULES, MODULE_CYCLE, MACHINE_HEALTH } from '../data/gamedata.js';
 
 export const PURIFIER_GOAL = 250;   // base goal; scales up with each ascension
 const CLEANSE_PER_GLYPH = 3;        // partial scrub — residue still climbs during purification
@@ -262,6 +262,14 @@ export function applyTick(state) {
   tickGolems(state);
   const enemyResult = tickEnemies(state);
   events.push(...enemyResult.events);
+
+  // Slow self-repair: damaged machines mend over time when not overwhelmed, so a
+  // chipped factory recovers between waves rather than carrying permanent scars.
+  for (const m of state.machines) {
+    if (m.health != null && m.health < MACHINE_HEALTH) {
+      m.health = Math.min(MACHINE_HEALTH, m.health + 0.05);
+    }
+  }
 
   state.residue += residueDelta * residueMultiplier(state) * wonderResidueMult(state) * eventResidueMult(state);
   // Passive dissipation (the environment absorbing pollution). This creates a

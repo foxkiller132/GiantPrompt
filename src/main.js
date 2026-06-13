@@ -1,7 +1,7 @@
 // Arcane Automata — bootstrap & game loop.
 // Vanilla ES modules, zero runtime dependencies (per the minimal-stack mandate).
 
-import { RESOURCES, MACHINES, threatTierFor, THREAT_TIERS, MODULES } from './data/gamedata.js';
+import { RESOURCES, MACHINES, threatTierFor, THREAT_TIERS, MODULES, MACHINE_HEALTH } from './data/gamedata.js';
 import { createState, place, applyTick, seedNodes, upgrade, upgradeCost, snapshot, restore, isUnlocked, research, canResearch, removeMachine, cycleModule, researchProgress } from './core/state.js';
 import { TECH } from './data/gamedata.js';
 import { ACHIEVEMENTS } from './core/achievements.js';
@@ -701,6 +701,7 @@ canvas.addEventListener('pointermove', (e) => {
     `<div class="aa-insp-grid"><div><b>In</b><br>${fmtRates(def.inputs)}</div>` +
     `<div><b>Out</b><br>${fmtRates(def.outputs)}</div></div>` +
     `<div class="aa-insp-foot">${m.active === false ? '⏸ idle' : '⚡ active'}` +
+    ` · ❤ ${Math.ceil(m.health ?? MACHINE_HEALTH)}/${MACHINE_HEALTH}` +
     `${m.overclock ? ' · ⚡<b>2× overclocked</b>' : ''}` +
     `${m.module ? ` · 𖤓<b>${MODULES[m.module].name}</b> (${MODULES[m.module].desc})` : ''} · ` +
     `residue ${def.residue}/tick · upgrade: ${upgradeCost(lvl)} ${RESOURCES.glyph.icon}` +
@@ -878,6 +879,14 @@ function renderWorld() {
       ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
       ctx.fillText('𖤓', px + 6, py + TILE - 8);
+    }
+    // Health bar for damaged machines.
+    if (m.health != null && m.health < MACHINE_HEALTH) {
+      const w = TILE - 12, frac = Math.max(0, m.health / MACHINE_HEALTH);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(px + 6, py + TILE - 12, w, 4);
+      ctx.fillStyle = frac > 0.5 ? '#5fd3a8' : frac > 0.25 ? '#d39a5f' : '#d35f5f';
+      ctx.fillRect(px + 6, py + TILE - 12, w * frac, 4);
     }
   }
 
