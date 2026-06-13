@@ -62,7 +62,9 @@ export function createState() {
 // Elemental Refinery fed without manual resupply.
 export function seedNodes(state, specs) {
   for (const n of specs) {
-    state.nodes.push({ id: state.nextId++, reserve: 5000, rate: 1, ...n });
+    // Large reserves so a long single run isn't walled by depletion (there is no
+    // exploration to find new patches); `rate` is the real throughput limiter.
+    state.nodes.push({ id: state.nextId++, reserve: 200000, rate: 1, ...n });
   }
 }
 
