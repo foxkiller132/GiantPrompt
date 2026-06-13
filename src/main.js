@@ -58,7 +58,7 @@ const threatTier = document.getElementById('threat-tier');
 
 function renderHud(tier) {
   resourceBar.innerHTML = Object.entries(state.resources)
-    .filter(([, v]) => v > 0 || ['manaStream', 'component'].includes(0))
+    .filter(([key, v]) => v > 0 || ['manaStream', 'component', 'glyph'].includes(key))
     .map(([key, v]) => {
       const r = RESOURCES[key];
       if (!r) return '';
