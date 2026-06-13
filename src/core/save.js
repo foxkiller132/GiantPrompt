@@ -21,7 +21,8 @@ export function setActiveSlot(slot) { localStorage.setItem(ACTIVE_KEY, String(sl
 // Save the live state into a slot, stamping progress metadata for the slot list.
 export function saveToSlot(state, slot) {
   try {
-    const meta = { tick: state.tick, purifications: state.purifications || 0,
+    const meta = { name: state.runName || '', tick: state.tick,
+                   purifications: state.purifications || 0,
                    machines: state.machines.length, residue: Math.floor(state.residue),
                    slain: state.stats?.enemiesSlain || 0 };
     localStorage.setItem(keyFor(slot),
@@ -56,6 +57,19 @@ export function listSlots() {
 }
 
 export function clearSlot(slot) { localStorage.removeItem(keyFor(slot)); }
+
+// Rename a saved run in place (updates both the meta and the stored state).
+export function renameSlot(slot, name) {
+  try {
+    const raw = localStorage.getItem(keyFor(slot));
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    data.meta = { ...(data.meta || {}), name };
+    if (data.state) data.state.runName = name;
+    localStorage.setItem(keyFor(slot), JSON.stringify(data));
+    return true;
+  } catch { return false; }
+}
 
 export function anySave() {
   return Array.from({ length: SLOT_COUNT }, (_, i) => slotMeta(i)).some(Boolean);

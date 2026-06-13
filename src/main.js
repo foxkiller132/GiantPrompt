@@ -9,7 +9,7 @@ import { BuildController } from './ui/build.js';
 import { Sound, pulse, drawPulses, isMuted, setMuted, getVolume, setVolume } from './ui/feedback.js';
 import { Net } from './net/p2p.js';
 import { saveGame, loadGame, hasSave, clearSave, anySave, listSlots, slotMeta,
-         loadFromSlot, setActiveSlot, getActiveSlot, clearSlot, saveToSlot } from './core/save.js';
+         loadFromSlot, setActiveSlot, getActiveSlot, clearSlot, saveToSlot, renameSlot } from './core/save.js';
 
 const TICK_MS = 1000;
 const TILE = 64;
@@ -253,6 +253,9 @@ function openMainMenu() {
 }
 function startGame() { menuVeil.hidden = true; Sound.portal(); setSpeed(defaultSpeed); }
 
+function fmtSlotName(meta, slot) {
+  return (meta && meta.name) ? meta.name : `Slot ${slot + 1}`;
+}
 function fmtSlot(meta) {
   if (!meta) return 'Empty';
   const when = new Date(meta.ts).toLocaleString();
@@ -269,9 +272,10 @@ function renderSlots(mode) {
       <div class="aa-slot">
         <button class="aa-menu-btn aa-slot-main" data-slot="${slot}"
           ${mode === 'load' && !meta ? 'disabled' : ''}>
-          <b>Slot ${slot + 1}</b><span class="aa-slot-meta">${fmtSlot(meta)}</span>
+          <b>${fmtSlotName(meta, slot)}</b><span class="aa-slot-meta">${fmtSlot(meta)}</span>
         </button>
-        ${meta ? `<button class="aa-slot-del" data-del="${slot}" title="Delete">✕</button>` : ''}
+        ${meta ? `<button class="aa-slot-rename" data-rename="${slot}" title="Rename">✎</button>
+                  <button class="aa-slot-del" data-del="${slot}" title="Delete">✕</button>` : ''}
       </div>`).join('') +
     `<button class="aa-menu-btn aa-menu-back">Back</button>`;
 
@@ -280,14 +284,21 @@ function renderSlots(mode) {
     const meta = slotMeta(slot);
     if (mode === 'new') {
       if (meta && !confirm(`Slot ${slot + 1} has a run (${meta.purifications}× purified). Overwrite it?`)) return;
+      const name = (prompt('Name this run:', `Run ${slot + 1}`) || '').trim();
       setActiveSlot(slot);
       newWorld();
+      state.runName = name;
       saveToSlot(state, slot);
       startGame();
     } else {
       if (!meta) return;
       if (loadFromSlot(state, slot)) { setActiveSlot(slot); state.status = 'playing'; startGame(); }
     }
+  }));
+  el.querySelectorAll('.aa-slot-rename').forEach(btn => btn.addEventListener('click', () => {
+    const slot = Number(btn.dataset.rename);
+    const name = prompt('Rename run:', fmtSlotName(slotMeta(slot), slot));
+    if (name != null) { renameSlot(slot, name.trim()); renderSlots(mode); }
   }));
   el.querySelectorAll('.aa-slot-del').forEach(btn => btn.addEventListener('click', () => {
     clearSlot(Number(btn.dataset.del)); renderSlots(mode);

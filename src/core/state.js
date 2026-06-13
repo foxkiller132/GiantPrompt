@@ -25,6 +25,7 @@ export function createState() {
     peers: {},      // { host:{x,y}, guest:{x,y} } — live cursor presence
     researched: [], // unlocked tech ids
     purifier: 0,    // progress toward the next Zone Purification milestone
+    runName: '',    // player-given label for this run (shown in the slot list)
     purifications: 0, // completed purifications (escalating endgame, never terminal)
     stats: { enemiesSlain: 0, machinesBuilt: 0, peakResidue: 0 }, // run statistics
     status: 'playing', // 'playing' | 'lost' (defeat is recoverable from a save)
