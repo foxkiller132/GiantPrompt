@@ -99,10 +99,10 @@ export const MACHINES = {
   manaCapacitor: {
     name: 'Mana Capacitor', glyph: '⊟', category: 'infrastructure',
     purpose: 'Mana Buffering',
-    inputs:  { manaStream: 4 },
+    inputs:  { manaStream: 8 },
     outputs: { manaCrystal: 1 },
     residue: 0,
-    notes: 'Stores surplus Mana Stream as Stable Mana Crystals to smooth demand spikes.',
+    notes: 'Stores surplus Mana Stream as Stable Mana Crystals at a loss — a buffer, not a generator.',
   },
   aegisSpire: {
     name: 'Aegis Spire', glyph: '⍟', category: 'defense',
